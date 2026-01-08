@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 
-interface NodeInput {
-  node_nr: number;
+// =============================================================================
+// TYPES
+// =============================================================================
+
+interface FirstNodeInput {
+  node_nr: 1;
   k_faktor: number;
   min_trykk_bar: number;
   dekningsareal_m2: number;
@@ -12,7 +16,18 @@ interface NodeInput {
   lengde_m: number;
   antall_90_bend: number;
   antall_tstykker: number;
-  er_grenror: boolean;
+}
+
+interface NodeInput {
+  node_nr: number;
+  k_faktor: number;
+  diameter_mm: number;
+  lengde_m: number;
+  antall_90_bend: number;
+  antall_tstykker: number;
+  er_grenror_h: boolean;
+  er_grenror_v: boolean;
+  er_ekv_kfaktor: boolean;
 }
 
 interface RettsrekkInput {
@@ -23,25 +38,34 @@ interface RettsrekkInput {
   antall_tstykker: number;
 }
 
+interface NodeResult {
+  node_nr: number;
+  flow_lpm: number;
+  pressure_at_node_bar: number;
+  cumulative_flow_lpm?: number;
+}
+
+interface RettsrekkResult {
+  rs_nr: number;
+  pressure_drop_per_m_bar: number;
+  outlet_pressure_bar: number;
+  total_length_m?: number;
+}
+
 interface CalculationResult {
   success: boolean;
   error?: string;
   total_vannmengde_lpm?: number;
   total_trykk_bar?: number;
-  noder?: Array<{
-    node_nr: number;
-    flow_lpm: number;
-    pressure_at_node_bar: number;
-    cumulative_flow_lpm?: number;
-  }>;
-  rettstrekk?: Array<{
-    rs_nr: number;
-    pressure_drop_per_m_bar: number;
-    outlet_pressure_bar: number;
-  }>;
+  noder?: NodeResult[];
+  rettstrekk?: RettsrekkResult[];
 }
 
-const defaultNode1: NodeInput = {
+// =============================================================================
+// DEFAULTS
+// =============================================================================
+
+const createDefaultFirstNode = (): FirstNodeInput => ({
   node_nr: 1,
   k_faktor: 80,
   min_trykk_bar: 0.5,
@@ -51,60 +75,350 @@ const defaultNode1: NodeInput = {
   lengde_m: 3,
   antall_90_bend: 0,
   antall_tstykker: 0,
-  er_grenror: false,
-};
+});
 
-const defaultNode2: NodeInput = {
-  node_nr: 2,
+const createDefaultNode = (nr: number): NodeInput => ({
+  node_nr: nr,
   k_faktor: 80,
-  min_trykk_bar: 0.5,
-  dekningsareal_m2: 0,
-  krav_mm_m2: 0,
   diameter_mm: 27.3,
   lengde_m: 0,
   antall_90_bend: 0,
   antall_tstykker: 1,
-  er_grenror: false,
-};
+  er_grenror_h: false,
+  er_grenror_v: false,
+  er_ekv_kfaktor: false,
+});
 
-const defaultRettstrekk: RettsrekkInput = {
-  rs_nr: 2,
-  diameter_mm: 36,
-  lengde_m: 4,
+const createDefaultRettstrekk = (nr: number): RettsrekkInput => ({
+  rs_nr: nr,
+  diameter_mm: nr === 1 ? 27.3 : 36,
+  lengde_m: 0,
   antall_90_bend: 0,
   antall_tstykker: 0,
-};
+});
+
+// =============================================================================
+// COMPONENTS
+// =============================================================================
+
+function InputField({
+  label,
+  value,
+  onChange,
+  type = "number",
+  step,
+  className = "",
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  type?: string;
+  step?: string;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label}
+      </label>
+      <input
+        type={type}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+      />
+    </div>
+  );
+}
+
+function FirstNodeSection({
+  node,
+  onChange,
+}: {
+  node: FirstNodeInput;
+  onChange: (node: FirstNodeInput) => void;
+}) {
+  return (
+    <div className="bg-white rounded-lg shadow p-4 mb-4">
+      <h2 className="text-lg font-semibold mb-3 text-blue-800">
+        Første Sprinklerhode
+      </h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <InputField
+          label="K-faktor"
+          value={node.k_faktor}
+          onChange={(v) => onChange({ ...node, k_faktor: v })}
+        />
+        <InputField
+          label="Min. trykk (Bar)"
+          value={node.min_trykk_bar}
+          onChange={(v) => onChange({ ...node, min_trykk_bar: v })}
+          step="0.1"
+        />
+        <InputField
+          label="Dekningsareal (m²)"
+          value={node.dekningsareal_m2}
+          onChange={(v) => onChange({ ...node, dekningsareal_m2: v })}
+        />
+        <InputField
+          label="Krav (mm/min/m²)"
+          value={node.krav_mm_m2}
+          onChange={(v) => onChange({ ...node, krav_mm_m2: v })}
+        />
+      </div>
+
+      <h3 className="text-md font-medium mt-4 mb-2 text-gray-700">
+        Rettstrekk 1
+      </h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <InputField
+          label="Diameter (mm)"
+          value={node.diameter_mm}
+          onChange={(v) => onChange({ ...node, diameter_mm: v })}
+          step="0.1"
+        />
+        <InputField
+          label="Lengde (m)"
+          value={node.lengde_m}
+          onChange={(v) => onChange({ ...node, lengde_m: v })}
+          step="0.1"
+        />
+        <InputField
+          label="90° Bend (stk)"
+          value={node.antall_90_bend}
+          onChange={(v) => onChange({ ...node, antall_90_bend: v })}
+        />
+        <InputField
+          label="T-stykker (stk)"
+          value={node.antall_tstykker}
+          onChange={(v) => onChange({ ...node, antall_tstykker: v })}
+        />
+      </div>
+    </div>
+  );
+}
+
+function NodeSection({
+  node,
+  onChange,
+}: {
+  node: NodeInput;
+  onChange: (node: NodeInput) => void;
+}) {
+  return (
+    <div className="bg-white rounded-lg shadow p-4 mb-4">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold text-blue-800">
+          Node {node.node_nr}
+        </h2>
+        <div className="flex gap-4 text-sm">
+          <label className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={node.er_grenror_h}
+              onChange={(e) =>
+                onChange({ ...node, er_grenror_h: e.target.checked })
+              }
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+            />
+            Grenrør H
+          </label>
+          <label className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={node.er_ekv_kfaktor}
+              onChange={(e) =>
+                onChange({ ...node, er_ekv_kfaktor: e.target.checked })
+              }
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+            />
+            Ekv k-faktor
+          </label>
+          <label className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={node.er_grenror_v}
+              onChange={(e) =>
+                onChange({ ...node, er_grenror_v: e.target.checked })
+              }
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+            />
+            Grenrør V
+          </label>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <InputField
+          label="K-faktor"
+          value={node.k_faktor}
+          onChange={(v) => onChange({ ...node, k_faktor: v })}
+        />
+        <InputField
+          label="Diameter (mm)"
+          value={node.diameter_mm}
+          onChange={(v) => onChange({ ...node, diameter_mm: v })}
+          step="0.1"
+        />
+        <InputField
+          label="Lengde (m)"
+          value={node.lengde_m}
+          onChange={(v) => onChange({ ...node, lengde_m: v })}
+          step="0.1"
+        />
+        <InputField
+          label="90° Bend (stk)"
+          value={node.antall_90_bend}
+          onChange={(v) => onChange({ ...node, antall_90_bend: v })}
+        />
+        <InputField
+          label="T-stykker (stk)"
+          value={node.antall_tstykker}
+          onChange={(v) => onChange({ ...node, antall_tstykker: v })}
+        />
+      </div>
+    </div>
+  );
+}
+
+function RettsrekkSection({
+  rettstrekk,
+  onChange,
+}: {
+  rettstrekk: RettsrekkInput;
+  onChange: (rs: RettsrekkInput) => void;
+}) {
+  return (
+    <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
+      <h3 className="text-md font-medium mb-2 text-gray-700">
+        Rettstrekk {rettstrekk.rs_nr}
+      </h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <InputField
+          label="Diameter (mm)"
+          value={rettstrekk.diameter_mm}
+          onChange={(v) => onChange({ ...rettstrekk, diameter_mm: v })}
+          step="0.1"
+        />
+        <InputField
+          label="Lengde (m)"
+          value={rettstrekk.lengde_m}
+          onChange={(v) => onChange({ ...rettstrekk, lengde_m: v })}
+          step="0.1"
+        />
+        <InputField
+          label="90° Bend (stk)"
+          value={rettstrekk.antall_90_bend}
+          onChange={(v) => onChange({ ...rettstrekk, antall_90_bend: v })}
+        />
+        <InputField
+          label="T-stykker (stk)"
+          value={rettstrekk.antall_tstykker}
+          onChange={(v) => onChange({ ...rettstrekk, antall_tstykker: v })}
+        />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// MAIN PAGE
+// =============================================================================
 
 export default function Home() {
+  // General parameters
   const [cFaktor, setCFaktor] = useState(120);
   const [hoydeAnlegg, setHoydeAnlegg] = useState(0);
-  const [node1, setNode1] = useState<NodeInput>(defaultNode1);
-  const [node2, setNode2] = useState<NodeInput>(defaultNode2);
-  const [rettstrekk, setRettstrekk] = useState<RettsrekkInput>(defaultRettstrekk);
+  const [antallNoder, setAntallNoder] = useState(4);
+
+  // First node (special - includes RS1)
+  const [firstNode, setFirstNode] = useState<FirstNodeInput>(
+    createDefaultFirstNode()
+  );
+
+  // Additional nodes (2-20)
+  const [nodes, setNodes] = useState<NodeInput[]>(() =>
+    Array.from({ length: 19 }, (_, i) => createDefaultNode(i + 2))
+  );
+
+  // Pipe sections (RS 2-20, RS1 is included in firstNode)
+  const [rettstrekk, setRettstrekk] = useState<RettsrekkInput[]>(() =>
+    Array.from({ length: 19 }, (_, i) => createDefaultRettstrekk(i + 2))
+  );
+
+  // Results
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Update a specific node
+  const updateNode = (index: number, node: NodeInput) => {
+    const newNodes = [...nodes];
+    newNodes[index] = node;
+    setNodes(newNodes);
+  };
+
+  // Update a specific rettstrekk
+  const updateRettstrekk = (index: number, rs: RettsrekkInput) => {
+    const newRettstrekk = [...rettstrekk];
+    newRettstrekk[index] = rs;
+    setRettstrekk(newRettstrekk);
+  };
+
+  // Build API request and calculate
   const handleCalculate = async () => {
     setLoading(true);
     setError(null);
+
+    // Build nodes array for API
+    const apiNodes = [
+      {
+        node_nr: 1,
+        k_faktor: firstNode.k_faktor,
+        min_trykk_bar: firstNode.min_trykk_bar,
+        dekningsareal_m2: firstNode.dekningsareal_m2,
+        krav_mm_m2: firstNode.krav_mm_m2,
+        diameter_mm: firstNode.diameter_mm,
+        lengde_m: firstNode.lengde_m,
+        antall_90_bend: firstNode.antall_90_bend,
+        antall_tstykker: firstNode.antall_tstykker,
+      },
+      ...nodes.slice(0, antallNoder - 1).map((n) => ({
+        node_nr: n.node_nr,
+        k_faktor: n.k_faktor,
+        diameter_mm: n.diameter_mm,
+        lengde_m: n.lengde_m,
+        antall_90_bend: n.antall_90_bend,
+        antall_tstykker: n.antall_tstykker,
+        er_grenror: n.er_grenror_h || n.er_grenror_v,
+        er_ekv_kfaktor: n.er_ekv_kfaktor,
+        er_tstykke: n.er_grenror_v,
+      })),
+    ];
+
+    // Build rettstrekk array for API (RS 2 onwards)
+    const apiRettstrekk = rettstrekk.slice(0, antallNoder - 1).map((rs) => ({
+      rs_nr: rs.rs_nr,
+      diameter_mm: rs.diameter_mm,
+      lengde_m: rs.lengde_m,
+      antall_90_bend: rs.antall_90_bend,
+      antall_tstykker: rs.antall_tstykker,
+    }));
 
     const inputData = {
       generelle_parametre: {
         c_faktor: cFaktor,
         hoyde_anlegg_m: hoydeAnlegg,
       },
-      noder: [node1, node2],
-      rettstrekk: [rettstrekk],
+      noder: apiNodes,
+      rettstrekk: apiRettstrekk,
       ventiler: {},
     };
 
     try {
       const response = await fetch("/api/calculate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(inputData),
       });
 
@@ -115,26 +429,35 @@ export default function Home() {
         setError(data.error || "Calculation failed");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to connect to API");
+      setError(
+        err instanceof Error ? err.message : "Failed to connect to API"
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // Visible nodes (based on antallNoder selection)
+  const visibleNodes = nodes.slice(0, antallNoder - 1);
+  const visibleRettstrekk = rettstrekk.slice(0, antallNoder - 1);
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Sprinkler Calculator
-        </h1>
-        <p className="text-gray-600 mb-8">
-          Hydraulisk beregning av sprinkleranlegg etter NS 12845
-        </p>
+    <div className="min-h-screen bg-gray-100 py-6 px-4">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Sprinkler Calculator
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Hydraulisk beregning av sprinkleranlegg etter NS 12845
+          </p>
+        </div>
 
         {/* General Parameters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Generelle Parametre</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white rounded-lg shadow p-4 mb-4">
+          <h2 className="text-lg font-semibold mb-3">Generelle Parametre</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 C-faktor
@@ -162,258 +485,43 @@ export default function Home() {
                 className="w-full border border-gray-300 rounded-md px-3 py-2"
               />
             </div>
-          </div>
-        </div>
-
-        {/* Node 1 - First Sprinkler */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">
-            Node 1 - Første Sprinklerhode
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                K-faktor
+                Antall noder
               </label>
-              <input
-                type="number"
-                value={node1.k_faktor}
-                onChange={(e) =>
-                  setNode1({ ...node1, k_faktor: Number(e.target.value) })
-                }
+              <select
+                value={antallNoder}
+                onChange={(e) => setAntallNoder(Number(e.target.value))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Min. trykk (Bar)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={node1.min_trykk_bar}
-                onChange={(e) =>
-                  setNode1({ ...node1, min_trykk_bar: Number(e.target.value) })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Dekningsareal (m²)
-              </label>
-              <input
-                type="number"
-                value={node1.dekningsareal_m2}
-                onChange={(e) =>
-                  setNode1({ ...node1, dekningsareal_m2: Number(e.target.value) })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Krav (mm/min/m²)
-              </label>
-              <input
-                type="number"
-                value={node1.krav_mm_m2}
-                onChange={(e) =>
-                  setNode1({ ...node1, krav_mm_m2: Number(e.target.value) })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Diameter (mm)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={node1.diameter_mm}
-                onChange={(e) =>
-                  setNode1({ ...node1, diameter_mm: Number(e.target.value) })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Lengde (m)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={node1.lengde_m}
-                onChange={(e) =>
-                  setNode1({ ...node1, lengde_m: Number(e.target.value) })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                90° Bend (stk)
-              </label>
-              <input
-                type="number"
-                value={node1.antall_90_bend}
-                onChange={(e) =>
-                  setNode1({ ...node1, antall_90_bend: Number(e.target.value) })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                T-stykker (stk)
-              </label>
-              <input
-                type="number"
-                value={node1.antall_tstykker}
-                onChange={(e) =>
-                  setNode1({ ...node1, antall_tstykker: Number(e.target.value) })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
+              >
+                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
 
-        {/* Node 2 */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Node 2</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                K-faktor
-              </label>
-              <input
-                type="number"
-                value={node2.k_faktor}
-                onChange={(e) =>
-                  setNode2({ ...node2, k_faktor: Number(e.target.value) })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Diameter (mm)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={node2.diameter_mm}
-                onChange={(e) =>
-                  setNode2({ ...node2, diameter_mm: Number(e.target.value) })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                T-stykker (stk)
-              </label>
-              <input
-                type="number"
-                value={node2.antall_tstykker}
-                onChange={(e) =>
-                  setNode2({ ...node2, antall_tstykker: Number(e.target.value) })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="grenror"
-                checked={node2.er_grenror}
-                onChange={(e) =>
-                  setNode2({ ...node2, er_grenror: e.target.checked })
-                }
-                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-              />
-              <label htmlFor="grenror" className="ml-2 text-sm text-gray-700">
-                Grenrør
-              </label>
-            </div>
-          </div>
-        </div>
+        {/* First Node + RS1 */}
+        <FirstNodeSection node={firstNode} onChange={setFirstNode} />
 
-        {/* Rettstrekk 2 */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Rettstrekk 2</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Diameter (mm)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={rettstrekk.diameter_mm}
-                onChange={(e) =>
-                  setRettstrekk({
-                    ...rettstrekk,
-                    diameter_mm: Number(e.target.value),
-                  })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
+        {/* Additional Nodes and Rettstrekk */}
+        {visibleNodes.map((node, index) => (
+          <div key={node.node_nr}>
+            <NodeSection
+              node={node}
+              onChange={(n) => updateNode(index, n)}
+            />
+            {visibleRettstrekk[index] && (
+              <RettsrekkSection
+                rettstrekk={visibleRettstrekk[index]}
+                onChange={(rs) => updateRettstrekk(index, rs)}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Lengde (m)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={rettstrekk.lengde_m}
-                onChange={(e) =>
-                  setRettstrekk({
-                    ...rettstrekk,
-                    lengde_m: Number(e.target.value),
-                  })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                90° Bend (stk)
-              </label>
-              <input
-                type="number"
-                value={rettstrekk.antall_90_bend}
-                onChange={(e) =>
-                  setRettstrekk({
-                    ...rettstrekk,
-                    antall_90_bend: Number(e.target.value),
-                  })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                T-stykker (stk)
-              </label>
-              <input
-                type="number"
-                value={rettstrekk.antall_tstykker}
-                onChange={(e) =>
-                  setRettstrekk({
-                    ...rettstrekk,
-                    antall_tstykker: Number(e.target.value),
-                  })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              />
-            </div>
+            )}
           </div>
-        </div>
+        ))}
 
         {/* Calculate Button */}
         <div className="mb-6">
@@ -422,7 +530,7 @@ export default function Home() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-blue-300 transition-colors"
           >
-            {loading ? "Beregner..." : "Beregn"}
+            {loading ? "Beregner..." : "Beregn Alle Noder"}
           </button>
         </div>
 
@@ -440,6 +548,7 @@ export default function Home() {
               Beregningsresultater
             </h2>
 
+            {/* Summary */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="bg-white rounded-lg p-4">
                 <div className="text-sm text-gray-500">Total vannmengde</div>
@@ -448,14 +557,14 @@ export default function Home() {
                 </div>
               </div>
               <div className="bg-white rounded-lg p-4">
-                <div className="text-sm text-gray-500">Totalt trykk</div>
+                <div className="text-sm text-gray-500">Totalt trykk (PQ-krav)</div>
                 <div className="text-2xl font-bold text-gray-900">
                   {result.total_trykk_bar?.toFixed(3)} Bar
                 </div>
               </div>
             </div>
 
-            {/* Node Results */}
+            {/* Node Results Table */}
             <h3 className="font-semibold text-green-800 mb-2">
               Noder (Sprinklerhoder)
             </h3>
@@ -467,7 +576,7 @@ export default function Home() {
                       Node
                     </th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Vannmengde
+                      Vannmengde Q
                     </th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                       Trykk
@@ -487,7 +596,7 @@ export default function Home() {
                         {node.flow_lpm.toFixed(1)} l/min
                       </td>
                       <td className="px-4 py-2 text-sm">
-                        {node.pressure_at_node_bar.toFixed(3)} Bar
+                        {node.pressure_at_node_bar.toFixed(4)} Bar
                       </td>
                       <td className="px-4 py-2 text-sm">
                         {node.cumulative_flow_lpm?.toFixed(1) || "-"} l/min
@@ -498,7 +607,7 @@ export default function Home() {
               </table>
             </div>
 
-            {/* Rettstrekk Results */}
+            {/* Rettstrekk Results Table */}
             {result.rettstrekk && result.rettstrekk.length > 0 && (
               <>
                 <h3 className="font-semibold text-green-800 mb-2">
@@ -515,7 +624,7 @@ export default function Home() {
                           Trykktap/m
                         </th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Utløpstrykk
+                          Totalt trykk
                         </th>
                       </tr>
                     </thead>
@@ -529,7 +638,7 @@ export default function Home() {
                             {rs.pressure_drop_per_m_bar.toFixed(6)} Bar/m
                           </td>
                           <td className="px-4 py-2 text-sm">
-                            {rs.outlet_pressure_bar.toFixed(3)} Bar
+                            {rs.outlet_pressure_bar.toFixed(4)} Bar
                           </td>
                         </tr>
                       ))}
@@ -541,7 +650,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Debug: Show raw JSON */}
+        {/* Debug JSON */}
         {result && (
           <details className="mt-6">
             <summary className="cursor-pointer text-gray-500 text-sm">
