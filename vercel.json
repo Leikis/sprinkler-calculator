@@ -1,14 +1,8 @@
 {
   "functions": {
     "api/*.py": {
-      "runtime": "python3.11",
+      "runtime": "@vercel/python@4.5.1",
       "maxDuration": 10
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    }
-  ]
+  }
 }
