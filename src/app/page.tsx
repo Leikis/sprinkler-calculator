@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 // =============================================================================
 // TYPES
@@ -76,6 +76,21 @@ interface CalculationResult {
   noder?: NodeResult[];
   rettstrekk?: RettsrekkResult[];
   ventil_ekvivalent_lengde?: number;
+}
+
+interface ProjectData {
+  version: string;
+  anleggsnavn: string;
+  kommentar: string;
+  generelle_parametre: {
+    c_faktor: number;
+    hoyde_anlegg_m: number;
+    antall_noder: number;
+  };
+  firstNode: FirstNodeInput;
+  nodes: NodeInput[];
+  rettstrekk: RettsrekkInput[];
+  ventiler: VentilInput[];
 }
 
 const createDefaultVentiler = (): VentilInput[] =>
@@ -654,6 +669,11 @@ function SystemDiagram({
 // =============================================================================
 
 export default function Home() {
+  // Project info
+  const [anleggsnavn, setAnleggsnavn] = useState("");
+  const [kommentar, setKommentar] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // General parameters
   const [cFaktor, setCFaktor] = useState(120);
   const [hoydeAnlegg, setHoydeAnlegg] = useState(0);
@@ -779,6 +799,187 @@ export default function Home() {
     }
   };
 
+  // Save project to JSON file
+  const handleSaveProject = () => {
+    const projectData: ProjectData = {
+      version: "1.0",
+      anleggsnavn,
+      kommentar,
+      generelle_parametre: {
+        c_faktor: cFaktor,
+        hoyde_anlegg_m: hoydeAnlegg,
+        antall_noder: antallNoder,
+      },
+      firstNode,
+      nodes,
+      rettstrekk,
+      ventiler,
+    };
+
+    const blob = new Blob([JSON.stringify(projectData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${anleggsnavn || "sprinkler-prosjekt"}-${new Date().toISOString().split("T")[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Load project from JSON file
+  const handleLoadProject = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string) as ProjectData;
+        
+        setAnleggsnavn(data.anleggsnavn || "");
+        setKommentar(data.kommentar || "");
+        setCFaktor(data.generelle_parametre.c_faktor);
+        setHoydeAnlegg(data.generelle_parametre.hoyde_anlegg_m);
+        setAntallNoder(data.generelle_parametre.antall_noder);
+        setFirstNode(data.firstNode);
+        setNodes(data.nodes);
+        setRettstrekk(data.rettstrekk);
+        setVentiler(data.ventiler);
+        setResult(null);
+        setError(null);
+      } catch {
+        setError("Kunne ikke lese fil. Sjekk at det er en gyldig JSON-fil.");
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Export to PDF
+  const handleExportPDF = async () => {
+    if (!result || !result.success) {
+      setError("Kjør beregning først for å eksportere PDF");
+      return;
+    }
+
+    // Create a printable HTML document
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      setError("Popup blokkert. Tillat popups for å eksportere PDF.");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString("nb-NO");
+    
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sprinklerberegning - ${anleggsnavn || "Uten navn"}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; font-size: 12px; }
+    h1 { color: #1e40af; font-size: 24px; margin-bottom: 5px; }
+    h2 { color: #1e40af; font-size: 16px; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+    .header { margin-bottom: 20px; }
+    .subtitle { color: #666; font-size: 14px; }
+    .meta { color: #666; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f3f4f6; font-weight: bold; }
+    .summary { display: flex; gap: 20px; margin: 20px 0; }
+    .summary-box { background: #f0fdf4; border: 1px solid #86efac; padding: 15px; border-radius: 8px; flex: 1; }
+    .summary-label { color: #666; font-size: 11px; }
+    .summary-value { font-size: 20px; font-weight: bold; color: #166534; }
+    .comment { background: #f9fafb; padding: 10px; border-radius: 4px; margin: 10px 0; white-space: pre-wrap; }
+    .footer { margin-top: 40px; color: #666; font-size: 10px; border-top: 1px solid #ccc; padding-top: 10px; }
+    @media print { body { margin: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Sprinklerberegning</h1>
+    <div class="subtitle">${anleggsnavn || "Uten navn"}</div>
+    <div class="meta">Dato: ${today} | C-faktor: ${cFaktor} | Høyde: ${hoydeAnlegg}m | Antall noder: ${antallNoder}</div>
+  </div>
+
+  ${kommentar ? `<div class="comment"><strong>Kommentar:</strong><br>${kommentar}</div>` : ""}
+
+  <div class="summary">
+    <div class="summary-box">
+      <div class="summary-label">Total vannmengde</div>
+      <div class="summary-value">${result.total_vannmengde_lpm?.toFixed(1)} l/min</div>
+    </div>
+    <div class="summary-box">
+      <div class="summary-label">Totalt trykk (PQ-krav)</div>
+      <div class="summary-value">${result.total_trykk_bar?.toFixed(3)} Bar</div>
+    </div>
+  </div>
+
+  <h2>Noder (Sprinklerhoder)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Node</th>
+        <th>Vannmengde Q (l/min)</th>
+        <th>Trykk (Bar)</th>
+        <th>Kumulativ Q (l/min)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${result.noder?.map(node => `
+        <tr>
+          <td>S${node.node_nr}</td>
+          <td>${node.flow_lpm.toFixed(1)}</td>
+          <td>${node.pressure_at_node_bar.toFixed(4)}</td>
+          <td>${node.cumulative_flow_lpm?.toFixed(1) || "-"}</td>
+        </tr>
+      `).join("") || ""}
+    </tbody>
+  </table>
+
+  <h2>Rettstrekk (Rørføringer)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>RS</th>
+        <th>Trykktap/m (Bar/m)</th>
+        <th>Utløpstrykk (Bar)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${result.rettstrekk?.map(rs => `
+        <tr>
+          <td>RS${rs.rs_nr}</td>
+          <td>${rs.pressure_drop_per_m_bar.toFixed(6)}</td>
+          <td>${rs.outlet_pressure_bar.toFixed(4)}</td>
+        </tr>
+      `).join("") || ""}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    Generert av Sprinkler Calculator | NS 12845 | ${today}
+  </div>
+
+  <script>
+    window.onload = function() { window.print(); }
+  </script>
+</body>
+</html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   // Visible nodes (based on antallNoder selection)
   const visibleNodes = nodes.slice(0, antallNoder - 1);
   const visibleRettstrekk = rettstrekk.slice(0, antallNoder - 1);
@@ -788,12 +989,74 @@ export default function Home() {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Sprinkler Calculator
-          </h1>
-          <p className="text-gray-600 text-sm">
-            Hydraulisk beregning av sprinkleranlegg etter NS 12845
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Sprinkler Calculator
+              </h1>
+              <p className="text-gray-600 text-sm">
+                Hydraulisk beregning av sprinkleranlegg etter NS 12845
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleLoadProject}
+                accept=".json"
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Importer
+              </button>
+              <button
+                onClick={handleSaveProject}
+                className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Lagre
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="px-3 py-2 text-sm bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
+              >
+                Eksporter PDF
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Project Info */}
+        <div className="bg-white rounded-lg shadow p-4 mb-4">
+          <h2 className="text-lg font-semibold mb-3">Prosjektinfo</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Anleggsnavn
+              </label>
+              <input
+                type="text"
+                value={anleggsnavn}
+                onChange={(e) => setAnleggsnavn(e.target.value)}
+                placeholder="F.eks. Bygg A - Kontorlokaler"
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Kommentar
+              </label>
+              <input
+                type="text"
+                value={kommentar}
+                onChange={(e) => setKommentar(e.target.value)}
+                placeholder="Valgfri beskrivelse"
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+              />
+            </div>
+          </div>
         </div>
 
         {/* General Parameters */}
