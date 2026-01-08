@@ -17,7 +17,6 @@ from typing import Dict, List, Any, Optional
 # CONSTANTS AND TABLES (from NS 12845 standard)
 # =============================================================================
 
-# C-factor adjustment multipliers for equivalent lengths
 C_FAKTOR_JUSTERING = {
     100: 0.714,
     110: 0.85,
@@ -26,8 +25,6 @@ C_FAKTOR_JUSTERING = {
     140: 1.33
 }
 
-# Equivalent pipe lengths for valves (meters) at C=120
-# Keys are valve types, values are dicts mapping diameter (mm) to length (m)
 EKVIVALENT_RORLENGDE_VENTILER = {
     "Sluseventil": {
         "50": 0.38, "65": 0.51, "80": 0.63, "100": 0.81, 
@@ -51,20 +48,14 @@ EKVIVALENT_RORLENGDE_VENTILER = {
     }
 }
 
-# Equivalent lengths for pipe fittings (meters) at C=120
-# Index corresponds to diameter: [20, 25, 32, 40, 50, 65, 80, 100, 150, 200, 250] mm
+# Standard diameters (mm)
 DIAMETERE = [20, 25, 32, 40, 50, 65, 80, 100, 150, 200, 250]
 
-# 90° threaded bend (standard)
+# Equivalent lengths for fittings at C=120 (meters)
+# Index corresponds to DIAMETERE
 EQ_90_BEND = [0.76, 0.77, 1.0, 1.2, 1.5, 1.9, 2.4, 3.0, 4.3, 5.7, 7.4]
-
-# 90° welded bend (r/d = 1.5)
 EQ_90_BEND_SVEISET = [0.30, 0.36, 0.49, 0.56, 0.69, 0.88, 1.1, 1.4, 2.0, 2.6, 3.4]
-
-# 45° threaded bend (standard)
 EQ_45_BEND = [0.34, 0.40, 0.55, 0.66, 0.76, 1.0, 1.3, 1.6, 2.3, 3.1, 3.9]
-
-# Standard threaded T-pipe (flow through branch)
 EQ_T_STYKKE = [1.3, 1.5, 2.1, 2.4, 2.9, 3.8, 4.8, 6.1, 8.6, 11.0, 14.0]
 
 
@@ -93,18 +84,12 @@ def hazen_williams_pressure_drop(
     """
     Calculate pressure drop per meter using Hazen-Williams formula.
     
-    Args:
-        flow_lpm: Flow rate in liters per minute
-        c_factor: Hazen-Williams C-factor (pipe roughness, typically 100-140)
-        diameter_mm: Internal pipe diameter in millimeters
-    
-    Returns:
-        Pressure drop in Bar per meter
+    Returns pressure drop in Bar per meter.
     """
     if diameter_mm <= 0 or flow_lpm <= 0:
         return 0.0
     
-    # Hazen-Williams formula: p = 6.05 * 10^5 * Q^1.85 / (C^1.85 * D^4.87)
+    # Hazen-Williams: p = 6.05 * 10^5 * Q^1.85 / (C^1.85 * D^4.87)
     p_tap_m = (6.05 * 10**5) * (flow_lpm ** 1.85) / ((c_factor ** 1.85) * (diameter_mm ** 4.87))
     return p_tap_m
 
@@ -116,19 +101,7 @@ def calculate_equivalent_length(
     num_t_pieces: int = 0,
     num_45_bends: int = 0
 ) -> float:
-    """
-    Calculate equivalent pipe length for fittings.
-    
-    Args:
-        diameter_mm: Pipe diameter in mm
-        c_factor: C-factor for adjustment
-        num_90_bends: Number of 90° bends
-        num_t_pieces: Number of T-pieces (flow through branch)
-        num_45_bends: Number of 45° bends
-    
-    Returns:
-        Total equivalent length in meters
-    """
+    """Calculate equivalent pipe length for fittings."""
     d_index = get_nearest_diameter_index(diameter_mm)
     c_adjustment = get_c_factor_adjustment(c_factor)
     
@@ -145,17 +118,7 @@ def calculate_valve_equivalent_length(
     diameter_str: str,
     c_factor: float
 ) -> float:
-    """
-    Calculate equivalent length for a valve.
-    
-    Args:
-        valve_type: Type of valve (must match keys in EKVIVALENT_RORLENGDE_VENTILER)
-        diameter_str: Diameter as string (e.g., "50", "65", "80")
-        c_factor: C-factor for adjustment
-    
-    Returns:
-        Equivalent length in meters (0 if valve type or diameter not found)
-    """
+    """Calculate equivalent length for a valve."""
     if valve_type not in EKVIVALENT_RORLENGDE_VENTILER:
         return 0.0
     
@@ -170,7 +133,7 @@ def calculate_valve_equivalent_length(
 
 
 # =============================================================================
-# MAIN CALCULATION FUNCTIONS
+# NODE CALCULATION FUNCTIONS
 # =============================================================================
 
 def calculate_node_1(
@@ -187,27 +150,12 @@ def calculate_node_1(
     """
     Calculate the first sprinkler node (furthest from water supply).
     
-    This is the starting point of the calculation. The first node determines
-    the minimum required pressure and flow for the system.
-    
-    Args:
-        k_factor: Sprinkler K-factor
-        min_pressure_bar: Minimum required pressure at sprinkler (Bar)
-        coverage_area_m2: Coverage area per sprinkler (m²)
-        water_requirement_mm_m2: Water density requirement (mm/min/m²)
-        pipe_diameter_mm: Diameter of pipe section (mm)
-        pipe_length_m: Physical length of pipe section (m)
-        c_factor: Hazen-Williams C-factor
-        num_90_bends: Number of 90° bends in pipe section
-        num_t_pieces: Number of T-pieces in pipe section
-    
-    Returns:
-        Dict with calculation results
+    This is the starting point. RS1 is the pipe from sprinkler 1 to node 2.
     """
     # Calculate flow from K-factor: Q = K * sqrt(P)
     flow_from_k = k_factor * math.sqrt(min_pressure_bar)
     
-    # Calculate flow from water requirement
+    # Calculate flow from water requirement: Q = density * area
     flow_from_requirement = water_requirement_mm_m2 * coverage_area_m2
     
     # Use the larger of the two flows
@@ -217,7 +165,7 @@ def calculate_node_1(
     actual_pressure_bar = (flow_lpm / k_factor) ** 2
     pressure_at_node = max(actual_pressure_bar, min_pressure_bar)
     
-    # Calculate equivalent length for fittings
+    # Calculate equivalent length for fittings in RS1
     eq_length = calculate_equivalent_length(
         pipe_diameter_mm, c_factor, num_90_bends, num_t_pieces
     )
@@ -226,18 +174,55 @@ def calculate_node_1(
     # Calculate pressure drop per meter
     pressure_drop_per_m = hazen_williams_pressure_drop(flow_lpm, c_factor, pipe_diameter_mm)
     
-    # Total pressure at end of pipe section (inlet side)
-    total_pressure_bar = (pressure_drop_per_m * total_length) + pressure_at_node
+    # Pressure at inlet of RS1 (node 2 side)
+    pressure_after_rs1 = pressure_at_node + (pressure_drop_per_m * total_length)
     
     return {
         "node_nr": 1,
-        "flow_lpm": round(flow_lpm, 1),
+        "flow_lpm": round(flow_lpm, 2),
         "pressure_at_node_bar": round(pressure_at_node, 4),
         "pressure_drop_per_m_bar": round(pressure_drop_per_m, 6),
         "equivalent_length_m": round(eq_length, 2),
         "total_length_m": round(total_length, 2),
-        "total_pressure_bar": round(total_pressure_bar, 4),
-        "cumulative_flow_lpm": round(flow_lpm, 1)
+        "pressure_after_rs1_bar": round(pressure_after_rs1, 4),
+        "cumulative_flow_lpm": round(flow_lpm, 2),
+        # RS1 result embedded
+        "rs1": {
+            "rs_nr": 1,
+            "diameter_mm": pipe_diameter_mm,
+            "physical_length_m": round(pipe_length_m, 2),
+            "equivalent_length_m": round(eq_length, 2),
+            "total_length_m": round(total_length, 2),
+            "flow_lpm": round(flow_lpm, 2),
+            "pressure_drop_per_m_bar": round(pressure_drop_per_m, 6),
+            "inlet_pressure_bar": round(pressure_at_node, 4),
+            "outlet_pressure_bar": round(pressure_after_rs1, 4)
+        }
+    }
+
+
+def calculate_node_inline(
+    node_nr: int,
+    k_factor: float,
+    inlet_pressure_bar: float,
+    c_factor: float,
+    cumulative_flow_before: float
+) -> Dict[str, Any]:
+    """
+    Calculate an inline node (not on a branch pipe).
+    
+    Uses the inlet pressure to determine flow: Q = K * sqrt(P)
+    """
+    flow_lpm = k_factor * math.sqrt(inlet_pressure_bar)
+    cumulative_flow = cumulative_flow_before + flow_lpm
+    
+    return {
+        "node_nr": node_nr,
+        "flow_lpm": round(flow_lpm, 2),
+        "pressure_at_node_bar": round(inlet_pressure_bar, 4),
+        "k_factor_used": k_factor,
+        "is_branch": False,
+        "cumulative_flow_lpm": round(cumulative_flow, 2)
     }
 
 
@@ -249,72 +234,78 @@ def calculate_node_branch(
     c_factor: float,
     branch_diameter_mm: float,
     branch_length_m: float,
-    num_90_bends: int = 0,
-    num_t_pieces: int = 1,
-    is_branch_pipe: bool = False
+    num_90_bends: int,
+    num_t_pieces: int,
+    cumulative_flow_before: float,
+    use_equivalent_k: bool = False
 ) -> Dict[str, Any]:
     """
-    Calculate a branch node (grenrør) - sprinkler on a side branch.
+    Calculate a branch node (grenrør).
     
-    When is_branch_pipe is True, the calculation uses equivalent K-factor
-    method to account for pressure loss in the branch pipe.
+    The sprinkler is on a side pipe (branch) that connects to the main.
+    We calculate an equivalent K-factor that accounts for the branch pipe losses.
     
-    Args:
-        node_nr: Node number (2-20)
-        k_factor: Sprinkler K-factor
-        inlet_pressure_bar: Pressure at the branch point (from previous calculation)
-        min_pressure_bar: Minimum required pressure at sprinkler
-        c_factor: Hazen-Williams C-factor
-        branch_diameter_mm: Diameter of branch pipe (mm)
-        branch_length_m: Length of branch pipe (m)
-        num_90_bends: Number of 90° bends in branch
-        num_t_pieces: Number of T-pieces in branch
-        is_branch_pipe: If True, calculate using equivalent K-factor method
-    
-    Returns:
-        Dict with calculation results
+    Logic:
+    1. At minimum pressure (e.g., 0.5 bar), flow = K * sqrt(min_p)
+    2. This flow through the branch causes a pressure drop
+    3. Pressure at the T-junction must be higher to deliver min_p at sprinkler
+    4. Equivalent K-factor = flow / sqrt(pressure_at_junction)
+    5. Actual flow uses inlet_pressure_bar with equivalent K
     """
-    if is_branch_pipe and branch_diameter_mm > 0 and branch_length_m >= 0:
-        # Calculate equivalent length for branch fittings
-        eq_length = calculate_equivalent_length(
-            branch_diameter_mm, c_factor, num_90_bends, num_t_pieces
-        )
-        total_branch_length = branch_length_m + eq_length
-        
-        # Flow at minimum pressure using K-factor
+    if branch_diameter_mm <= 0:
+        # No branch pipe defined, treat as inline
+        return calculate_node_inline(node_nr, k_factor, inlet_pressure_bar, c_factor, cumulative_flow_before)
+    
+    # Calculate equivalent length for branch fittings
+    eq_length = calculate_equivalent_length(
+        branch_diameter_mm, c_factor, num_90_bends, num_t_pieces
+    )
+    total_branch_length = branch_length_m + eq_length
+    
+    if use_equivalent_k and total_branch_length > 0:
+        # Equivalent K-factor method
+        # Step 1: Flow at minimum pressure
         flow_at_min_p = k_factor * math.sqrt(min_pressure_bar)
         
-        # Pressure drop per meter for this flow
+        # Step 2: Pressure drop in branch at this flow
         p_drop_m = hazen_williams_pressure_drop(flow_at_min_p, c_factor, branch_diameter_mm)
+        branch_pressure_drop = p_drop_m * total_branch_length
         
-        # Pressure at branch point needed to deliver min_pressure at sprinkler
-        pressure_at_branch = (p_drop_m * total_branch_length) + min_pressure_bar
+        # Step 3: Required pressure at T-junction (main pipe)
+        pressure_at_junction = min_pressure_bar + branch_pressure_drop
         
-        # Calculate equivalent K-factor
-        # This K-factor gives the same flow when applied to the branch point pressure
-        k_equivalent = flow_at_min_p / math.sqrt(pressure_at_branch)
+        # Step 4: Equivalent K-factor
+        k_equivalent = flow_at_min_p / math.sqrt(pressure_at_junction)
         
-        # Now calculate actual flow using inlet pressure
+        # Step 5: Actual flow using inlet pressure with equivalent K
         flow_lpm = k_equivalent * math.sqrt(inlet_pressure_bar)
         
-        return {
-            "node_nr": node_nr,
-            "flow_lpm": round(flow_lpm, 1),
-            "pressure_at_node_bar": round(inlet_pressure_bar, 4),
-            "k_equivalent": round(k_equivalent, 2),
-            "branch_length_m": round(total_branch_length, 2),
-            "is_branch": True
-        }
-    else:
-        # Simple K-factor calculation (inline sprinkler)
-        flow_lpm = k_factor * math.sqrt(inlet_pressure_bar)
+        cumulative_flow = cumulative_flow_before + flow_lpm
         
         return {
             "node_nr": node_nr,
-            "flow_lpm": round(flow_lpm, 1),
+            "flow_lpm": round(flow_lpm, 2),
+            "pressure_at_node_bar": round(inlet_pressure_bar, 4),
+            "k_factor_original": k_factor,
+            "k_equivalent": round(k_equivalent, 2),
+            "branch_length_m": round(total_branch_length, 2),
+            "branch_pressure_drop_bar": round(branch_pressure_drop, 4),
+            "is_branch": True,
+            "cumulative_flow_lpm": round(cumulative_flow, 2)
+        }
+    else:
+        # Simple branch (not using equivalent K) - just use inlet pressure
+        flow_lpm = k_factor * math.sqrt(inlet_pressure_bar)
+        cumulative_flow = cumulative_flow_before + flow_lpm
+        
+        return {
+            "node_nr": node_nr,
+            "flow_lpm": round(flow_lpm, 2),
             "pressure_at_node_bar": round(inlet_pressure_bar, 4),
             "k_factor_used": k_factor,
-            "is_branch": False
+            "branch_length_m": round(total_branch_length, 2),
+            "is_branch": True,
+            "cumulative_flow_lpm": round(cumulative_flow, 2)
         }
 
 
@@ -332,27 +323,21 @@ def calculate_pipe_section(
     """
     Calculate pressure drop through a pipe section (Rettstrekk).
     
-    Args:
-        rs_nr: Pipe section number
-        diameter_mm: Pipe diameter (mm)
-        length_m: Physical pipe length (m)
-        flow_lpm: Flow rate through pipe (l/min)
-        inlet_pressure_bar: Pressure at start of section (Bar)
-        c_factor: Hazen-Williams C-factor
-        num_90_bends: Number of 90° bends
-        num_t_pieces: Number of T-pieces
-        valve_equivalent_length_m: Additional equivalent length from valves
-    
-    Returns:
-        Dict with calculation results
+    RS N connects node N to node N+1.
+    Flow is the cumulative flow at node N.
     """
     if diameter_mm <= 0 or flow_lpm <= 0:
         return {
             "rs_nr": rs_nr,
-            "pressure_drop_per_m_bar": 0.0,
-            "total_pressure_bar": inlet_pressure_bar,
+            "diameter_mm": diameter_mm,
+            "physical_length_m": round(length_m, 2),
             "equivalent_length_m": 0.0,
-            "total_length_m": length_m
+            "total_length_m": round(length_m, 2),
+            "flow_lpm": 0.0,
+            "pressure_drop_per_m_bar": 0.0,
+            "pressure_drop_total_bar": 0.0,
+            "inlet_pressure_bar": round(inlet_pressure_bar, 4),
+            "outlet_pressure_bar": round(inlet_pressure_bar, 4)
         }
     
     # Calculate equivalent length for fittings
@@ -360,7 +345,7 @@ def calculate_pipe_section(
         diameter_mm, c_factor, num_90_bends, num_t_pieces
     )
     
-    # Total equivalent length
+    # Total equivalent length including valves
     total_length = length_m + eq_length + valve_equivalent_length_m
     
     # Calculate pressure drop
@@ -376,7 +361,7 @@ def calculate_pipe_section(
         "physical_length_m": round(length_m, 2),
         "equivalent_length_m": round(eq_length + valve_equivalent_length_m, 2),
         "total_length_m": round(total_length, 2),
-        "flow_lpm": round(flow_lpm, 1),
+        "flow_lpm": round(flow_lpm, 2),
         "pressure_drop_per_m_bar": round(pressure_drop_per_m, 6),
         "pressure_drop_total_bar": round(pressure_drop_total, 4),
         "inlet_pressure_bar": round(inlet_pressure_bar, 4),
@@ -392,34 +377,21 @@ def calculate_sprinkler_system(input_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Main calculation function for sprinkler system.
     
-    Takes a complete system definition and returns all calculated values.
+    System layout:
+    - Node 1 is the furthest sprinkler
+    - RS1 connects Node 1 to Node 2
+    - Each subsequent RS connects its node to the next
+    - Water flows from supply → last RS → ... → RS1 → Node 1
     
-    Args:
-        input_data: Dict containing:
-            - generelle_parametre: {c_faktor, hoyde_anlegg_m}
-            - noder: List of node definitions
-            - rettstrekk: List of pipe section definitions
-            - ventiler: Dict of valve definitions
-    
-    Returns:
-        Dict containing all calculation results
+    Calculation direction:
+    - Start at Node 1 with minimum pressure
+    - Work backwards towards supply, adding pressure drops
     """
     try:
         # Extract general parameters
         params = input_data.get("generelle_parametre", {})
         c_factor = float(params.get("c_faktor", 120))
         building_height_m = float(params.get("hoyde_anlegg_m", 0))
-        
-        # Initialize results
-        results = {
-            "success": True,
-            "c_faktor": c_factor,
-            "hoyde_anlegg_m": building_height_m,
-            "noder": [],
-            "rettstrekk": [],
-            "total_vannmengde_lpm": 0.0,
-            "total_trykk_bar": 0.0
-        }
         
         # Calculate valve equivalent lengths per pipe section
         ventiler = input_data.get("ventiler", {})
@@ -431,94 +403,114 @@ def calculate_sprinkler_system(input_data: Dict[str, Any]) -> Dict[str, Any]:
                 eq_len = calculate_valve_equivalent_length(valve_name, dim, c_factor)
                 valve_eq_per_rs[rs_nr] = valve_eq_per_rs.get(rs_nr, 0) + eq_len
         
-        # Get nodes and pipe sections
+        # Get and sort nodes
         noder = input_data.get("noder", [])
-        rettstrekk = input_data.get("rettstrekk", [])
-        
-        # Sort by node/section number
         noder = sorted(noder, key=lambda x: x.get("node_nr", 0))
+        
+        # Get pipe sections (RS2 onwards - RS1 is in node 1)
+        rettstrekk = input_data.get("rettstrekk", [])
         rettstrekk = sorted(rettstrekk, key=lambda x: x.get("rs_nr", 0))
         
-        # Track cumulative values
-        cumulative_flow = 0.0
-        current_pressure = 0.0
+        # Create lookup dict for rettstrekk by number
+        rs_dict = {rs.get("rs_nr"): rs for rs in rettstrekk}
         
-        # Calculate node 1 first (if exists)
-        if noder and noder[0].get("node_nr") == 1:
-            node_1_data = noder[0]
-            node_1_result = calculate_node_1(
-                k_factor=float(node_1_data.get("k_faktor", 80)),
-                min_pressure_bar=float(node_1_data.get("min_trykk_bar", 0.5)),
-                coverage_area_m2=float(node_1_data.get("dekningsareal_m2", 12)),
-                water_requirement_mm_m2=float(node_1_data.get("krav_mm_m2", 5)),
-                pipe_diameter_mm=float(node_1_data.get("diameter_mm", 27.3)),
-                pipe_length_m=float(node_1_data.get("lengde_m", 0)),
-                c_factor=c_factor,
-                num_90_bends=int(node_1_data.get("antall_90_bend", 0)),
-                num_t_pieces=int(node_1_data.get("antall_tstykker", 0))
-            )
-            results["noder"].append(node_1_result)
-            cumulative_flow = node_1_result["flow_lpm"]
-            current_pressure = node_1_result["total_pressure_bar"]
+        # Results
+        node_results = []
+        rs_results = []
         
-        # Calculate remaining nodes and pipe sections
+        # STEP 1: Calculate Node 1 and RS1
+        if not noder:
+            return {"success": False, "error": "No nodes provided"}
+        
+        node_1_data = noder[0]
+        if node_1_data.get("node_nr") != 1:
+            return {"success": False, "error": "First node must be node_nr=1"}
+        
+        node_1_result = calculate_node_1(
+            k_factor=float(node_1_data.get("k_faktor", 80)),
+            min_pressure_bar=float(node_1_data.get("min_trykk_bar", 0.5)),
+            coverage_area_m2=float(node_1_data.get("dekningsareal_m2", 12)),
+            water_requirement_mm_m2=float(node_1_data.get("krav_mm_m2", 5)),
+            pipe_diameter_mm=float(node_1_data.get("diameter_mm", 27.3)),
+            pipe_length_m=float(node_1_data.get("lengde_m", 0)),
+            c_factor=c_factor,
+            num_90_bends=int(node_1_data.get("antall_90_bend", 0)),
+            num_t_pieces=int(node_1_data.get("antall_tstykker", 0))
+        )
+        node_results.append(node_1_result)
+        rs_results.append(node_1_result["rs1"])
+        
+        # Track cumulative flow and current pressure
+        cumulative_flow = node_1_result["flow_lpm"]
+        current_pressure = node_1_result["pressure_after_rs1_bar"]
+        
+        # STEP 2: Calculate remaining nodes (2, 3, 4, ...)
         for i, node_data in enumerate(noder[1:], start=2):
             node_nr = node_data.get("node_nr", i)
             
-            # Check if this is a branch pipe
-            is_branch = node_data.get("er_grenror", False) or node_data.get("er_tstykke", False)
+            # Check if this is a branch node
+            is_branch = node_data.get("er_grenror", False)
+            use_ekv_k = node_data.get("er_ekv_kfaktor", False)
             
-            node_result = calculate_node_branch(
-                node_nr=node_nr,
-                k_factor=float(node_data.get("k_faktor", 80)),
-                inlet_pressure_bar=current_pressure,
-                min_pressure_bar=float(node_data.get("min_trykk_bar", 0.5)),
-                c_factor=c_factor,
-                branch_diameter_mm=float(node_data.get("diameter_mm", 27.3)),
-                branch_length_m=float(node_data.get("lengde_m", 0)),
-                num_90_bends=int(node_data.get("antall_90_bend", 0)),
-                num_t_pieces=int(node_data.get("antall_tstykker", 1)),
-                is_branch_pipe=is_branch
-            )
+            if is_branch:
+                node_result = calculate_node_branch(
+                    node_nr=node_nr,
+                    k_factor=float(node_data.get("k_faktor", 80)),
+                    inlet_pressure_bar=current_pressure,
+                    min_pressure_bar=float(node_data.get("min_trykk_bar", 0.5)),
+                    c_factor=c_factor,
+                    branch_diameter_mm=float(node_data.get("diameter_mm", 27.3)),
+                    branch_length_m=float(node_data.get("lengde_m", 0)),
+                    num_90_bends=int(node_data.get("antall_90_bend", 0)),
+                    num_t_pieces=int(node_data.get("antall_tstykker", 1)),
+                    cumulative_flow_before=cumulative_flow,
+                    use_equivalent_k=use_ekv_k
+                )
+            else:
+                node_result = calculate_node_inline(
+                    node_nr=node_nr,
+                    k_factor=float(node_data.get("k_faktor", 80)),
+                    inlet_pressure_bar=current_pressure,
+                    c_factor=c_factor,
+                    cumulative_flow_before=cumulative_flow
+                )
             
-            node_result["cumulative_flow_lpm"] = round(cumulative_flow + node_result["flow_lpm"], 1)
-            results["noder"].append(node_result)
-            cumulative_flow += node_result["flow_lpm"]
-        
-        # Calculate pipe sections
-        flow_for_section = cumulative_flow  # Start with total flow (working backwards)
-        section_pressure = current_pressure
-        
-        for rs_data in rettstrekk:
-            rs_nr = rs_data.get("rs_nr", 1)
+            node_results.append(node_result)
+            cumulative_flow = node_result["cumulative_flow_lpm"]
             
-            # Get flow for this section (simplified - using cumulative for now)
-            # In full implementation, this would track flow changes at each node
+            # STEP 3: Calculate RS for this node (RS N connects node N to node N+1)
+            rs_nr = node_nr
+            rs_data = rs_dict.get(rs_nr, {})
             
-            rs_result = calculate_pipe_section(
-                rs_nr=rs_nr,
-                diameter_mm=float(rs_data.get("diameter_mm", 27.3)),
-                length_m=float(rs_data.get("lengde_m", 0)),
-                flow_lpm=cumulative_flow,  # Simplified
-                inlet_pressure_bar=section_pressure,
-                c_factor=c_factor,
-                num_90_bends=int(rs_data.get("antall_90_bend", 0)),
-                num_t_pieces=int(rs_data.get("antall_tstykker", 0)),
-                valve_equivalent_length_m=valve_eq_per_rs.get(rs_nr, 0)
-            )
-            
-            results["rettstrekk"].append(rs_result)
-            section_pressure = rs_result["outlet_pressure_bar"]
+            if rs_data:
+                rs_result = calculate_pipe_section(
+                    rs_nr=rs_nr,
+                    diameter_mm=float(rs_data.get("diameter_mm", 36)),
+                    length_m=float(rs_data.get("lengde_m", 0)),
+                    flow_lpm=cumulative_flow,
+                    inlet_pressure_bar=current_pressure,
+                    c_factor=c_factor,
+                    num_90_bends=int(rs_data.get("antall_90_bend", 0)),
+                    num_t_pieces=int(rs_data.get("antall_tstykker", 0)),
+                    valve_equivalent_length_m=valve_eq_per_rs.get(rs_nr, 0)
+                )
+                rs_results.append(rs_result)
+                current_pressure = rs_result["outlet_pressure_bar"]
         
-        # Add height adjustment
-        height_pressure = building_height_m * 0.1  # ~0.1 bar per meter height
+        # STEP 4: Add height adjustment (0.1 bar per meter)
+        height_pressure = building_height_m * 0.1
+        total_pressure = current_pressure + height_pressure
         
-        # Final totals
-        results["total_vannmengde_lpm"] = round(cumulative_flow, 1)
-        results["total_trykk_bar"] = round(section_pressure + height_pressure, 3)
-        results["hoyde_tillegg_bar"] = round(height_pressure, 3)
-        
-        return results
+        return {
+            "success": True,
+            "c_faktor": c_factor,
+            "hoyde_anlegg_m": building_height_m,
+            "hoyde_tillegg_bar": round(height_pressure, 3),
+            "noder": node_results,
+            "rettstrekk": rs_results,
+            "total_vannmengde_lpm": round(cumulative_flow, 1),
+            "total_trykk_bar": round(total_pressure, 3)
+        }
         
     except Exception as e:
         return {
@@ -529,11 +521,10 @@ def calculate_sprinkler_system(input_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # =============================================================================
-# TEST / VALIDATION
+# TEST
 # =============================================================================
 
 if __name__ == "__main__":
-    # Simple test case
     test_input = {
         "generelle_parametre": {
             "c_faktor": 120,
@@ -544,7 +535,7 @@ if __name__ == "__main__":
                 "node_nr": 1,
                 "k_faktor": 80,
                 "min_trykk_bar": 0.5,
-                "dekningsareal_m2": 10,
+                "dekningsareal_m2": 12,
                 "krav_mm_m2": 5,
                 "diameter_mm": 27.3,
                 "lengde_m": 3,
@@ -559,6 +550,25 @@ if __name__ == "__main__":
                 "lengde_m": 0,
                 "antall_90_bend": 0,
                 "antall_tstykker": 1
+            },
+            {
+                "node_nr": 3,
+                "k_faktor": 80,
+                "er_grenror": True,
+                "er_ekv_kfaktor": True,
+                "diameter_mm": 27.3,
+                "lengde_m": 2,
+                "antall_90_bend": 1,
+                "antall_tstykker": 1
+            },
+            {
+                "node_nr": 4,
+                "k_faktor": 80,
+                "er_grenror": False,
+                "diameter_mm": 27.3,
+                "lengde_m": 0,
+                "antall_90_bend": 0,
+                "antall_tstykker": 1
             }
         ],
         "rettstrekk": [
@@ -567,6 +577,20 @@ if __name__ == "__main__":
                 "diameter_mm": 36,
                 "lengde_m": 4,
                 "antall_90_bend": 0,
+                "antall_tstykker": 0
+            },
+            {
+                "rs_nr": 3,
+                "diameter_mm": 36,
+                "lengde_m": 4,
+                "antall_90_bend": 0,
+                "antall_tstykker": 0
+            },
+            {
+                "rs_nr": 4,
+                "diameter_mm": 42,
+                "lengde_m": 5,
+                "antall_90_bend": 1,
                 "antall_tstykker": 0
             }
         ],
