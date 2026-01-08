@@ -396,12 +396,14 @@ def calculate_sprinkler_system(input_data: Dict[str, Any]) -> Dict[str, Any]:
         # Calculate valve equivalent lengths per pipe section
         ventiler = input_data.get("ventiler", {})
         valve_eq_per_rs = {}
+        total_valve_eq_length = 0.0
         for valve_name, valve_data in ventiler.items():
             dim = valve_data.get("dimensjon", "NA")
             rs_nr = int(valve_data.get("tilkoblet_rs", 0))
             if dim != "NA" and rs_nr > 0:
                 eq_len = calculate_valve_equivalent_length(valve_name, dim, c_factor)
                 valve_eq_per_rs[rs_nr] = valve_eq_per_rs.get(rs_nr, 0) + eq_len
+                total_valve_eq_length += eq_len
         
         # Get and sort nodes
         noder = input_data.get("noder", [])
@@ -509,7 +511,8 @@ def calculate_sprinkler_system(input_data: Dict[str, Any]) -> Dict[str, Any]:
             "noder": node_results,
             "rettstrekk": rs_results,
             "total_vannmengde_lpm": round(cumulative_flow, 1),
-            "total_trykk_bar": round(total_pressure, 3)
+            "total_trykk_bar": round(total_pressure, 3),
+            "ventil_ekvivalent_lengde": round(total_valve_eq_length, 2)
         }
         
     except Exception as e:

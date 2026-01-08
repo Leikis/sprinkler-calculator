@@ -38,6 +38,22 @@ interface RettsrekkInput {
   antall_tstykker: number;
 }
 
+interface VentilInput {
+  type: string;
+  dimensjon: string;
+  tilkoblet_rs: number;
+}
+
+const VALVE_TYPES = [
+  "Sluseventil",
+  "Alarmventil/tilbakeslagsventil hengslet",
+  "Alarmventil/tilbakeslagsventil membran",
+  "Spjeldventil",
+  "Kuleventil",
+] as const;
+
+const VALVE_DIMENSIONS = ["NA", "50", "65", "80", "100", "150", "200", "250"] as const;
+
 interface NodeResult {
   node_nr: number;
   flow_lpm: number;
@@ -59,7 +75,15 @@ interface CalculationResult {
   total_trykk_bar?: number;
   noder?: NodeResult[];
   rettstrekk?: RettsrekkResult[];
+  ventil_ekvivalent_lengde?: number;
 }
+
+const createDefaultVentiler = (): VentilInput[] =>
+  VALVE_TYPES.map((type) => ({
+    type,
+    dimensjon: "NA",
+    tilkoblet_rs: 5,
+  }));
 
 // =============================================================================
 // DEFAULTS
@@ -321,6 +345,74 @@ function RettsrekkSection({
   );
 }
 
+function ValveTable({
+  ventiler,
+  onChange,
+  antallNoder,
+}: {
+  ventiler: VentilInput[];
+  onChange: (ventiler: VentilInput[]) => void;
+  antallNoder: number;
+}) {
+  const updateVentil = (index: number, field: keyof VentilInput, value: string | number) => {
+    const newVentiler = [...ventiler];
+    newVentiler[index] = { ...newVentiler[index], [field]: value };
+    onChange(newVentiler);
+  };
+
+  const getShortName = (type: string) => {
+    if (type.includes("hengslet")) return "Alarmventil (hengslet)";
+    if (type.includes("membran")) return "Alarmventil (membran)";
+    return type;
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow p-4 mb-4">
+      <h2 className="text-lg font-semibold mb-3 text-blue-800">Ventiler</h2>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left py-2 pr-4 font-medium text-gray-700">Type</th>
+              <th className="text-left py-2 px-2 font-medium text-gray-700">Dim (mm)</th>
+              <th className="text-left py-2 px-2 font-medium text-gray-700">RS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ventiler.map((ventil, index) => (
+              <tr key={ventil.type} className="border-b last:border-b-0">
+                <td className="py-2 pr-4 text-gray-600">{getShortName(ventil.type)}</td>
+                <td className="py-2 px-2">
+                  <select
+                    value={ventil.dimensjon}
+                    onChange={(e) => updateVentil(index, "dimensjon", e.target.value)}
+                    className="w-20 border border-gray-300 rounded px-2 py-1 text-sm"
+                  >
+                    {VALVE_DIMENSIONS.map((dim) => (
+                      <option key={dim} value={dim}>{dim}</option>
+                    ))}
+                  </select>
+                </td>
+                <td className="py-2 px-2">
+                  <select
+                    value={ventil.tilkoblet_rs}
+                    onChange={(e) => updateVentil(index, "tilkoblet_rs", Number(e.target.value))}
+                    className="w-16 border border-gray-300 rounded px-2 py-1 text-sm"
+                  >
+                    {Array.from({ length: antallNoder }, (_, i) => i + 1).map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // =============================================================================
 // MAIN PAGE
 // =============================================================================
@@ -345,6 +437,9 @@ export default function Home() {
   const [rettstrekk, setRettstrekk] = useState<RettsrekkInput[]>(() =>
     Array.from({ length: 19 }, (_, i) => createDefaultRettstrekk(i + 2))
   );
+
+  // Valves
+  const [ventiler, setVentiler] = useState<VentilInput[]>(createDefaultVentiler);
 
   // Results
   const [result, setResult] = useState<CalculationResult | null>(null);
@@ -405,6 +500,17 @@ export default function Home() {
       antall_tstykker: rs.antall_tstykker,
     }));
 
+    // Build ventiler object for API
+    const apiVentiler: Record<string, { dimensjon: string; tilkoblet_rs: number }> = {};
+    ventiler.forEach((v) => {
+      if (v.dimensjon !== "NA") {
+        apiVentiler[v.type] = {
+          dimensjon: v.dimensjon,
+          tilkoblet_rs: v.tilkoblet_rs,
+        };
+      }
+    });
+
     const inputData = {
       generelle_parametre: {
         c_faktor: cFaktor,
@@ -412,7 +518,7 @@ export default function Home() {
       },
       noder: apiNodes,
       rettstrekk: apiRettstrekk,
-      ventiler: {},
+      ventiler: apiVentiler,
     };
 
     try {
@@ -522,6 +628,13 @@ export default function Home() {
             )}
           </div>
         ))}
+
+        {/* Valve Table */}
+        <ValveTable
+          ventiler={ventiler}
+          onChange={setVentiler}
+          antallNoder={antallNoder}
+        />
 
         {/* Calculate Button */}
         <div className="mb-6">
