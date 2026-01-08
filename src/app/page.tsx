@@ -414,6 +414,242 @@ function ValveTable({
 }
 
 // =============================================================================
+// SYSTEM DIAGRAM
+// =============================================================================
+
+interface DiagramNode {
+  node_nr: number;
+  flow_lpm: number;
+  pressure_bar: number;
+  is_branch: boolean;
+  branch_side?: "H" | "V";
+}
+
+function SystemDiagram({
+  nodes,
+  nodeInputs,
+  antallNoder,
+}: {
+  nodes: NodeResult[] | undefined;
+  nodeInputs: NodeInput[];
+  antallNoder: number;
+}) {
+  if (!nodes || nodes.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-4 mb-4">
+        <h2 className="text-lg font-semibold mb-3 text-blue-800">Systemdiagram</h2>
+        <div className="h-48 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">
+          Kjør beregning for å se diagram
+        </div>
+      </div>
+    );
+  }
+
+  // Layout constants
+  const nodeRadius = 24;
+  const nodeSpacingX = 100;
+  const nodeSpacingY = 80;
+  const branchOffset = 60;
+  const startX = 60;
+  const startY = 50;
+  const width = Math.max(400, startX * 2 + (antallNoder - 1) * nodeSpacingX + branchOffset);
+  const height = startY * 2 + nodeSpacingY + branchOffset;
+
+  // Build diagram data
+  const diagramNodes: DiagramNode[] = nodes.map((node, index) => {
+    const inputNode = index === 0 ? null : nodeInputs[index - 1];
+    const isBranch = inputNode ? (inputNode.er_grenror_h || inputNode.er_grenror_v) : false;
+    const branchSide = inputNode?.er_grenror_h ? "H" : inputNode?.er_grenror_v ? "V" : undefined;
+    
+    return {
+      node_nr: node.node_nr,
+      flow_lpm: node.flow_lpm,
+      pressure_bar: node.pressure_at_node_bar,
+      is_branch: isBranch,
+      branch_side: branchSide,
+    };
+  });
+
+  // Calculate positions - main line goes left to right, branches go up/down
+  const getNodePosition = (index: number) => {
+    const node = diagramNodes[index];
+    const baseX = startX + index * nodeSpacingX;
+    const baseY = startY + nodeSpacingY;
+    
+    if (node.is_branch) {
+      const yOffset = node.branch_side === "H" ? -branchOffset : branchOffset;
+      return { x: baseX, y: baseY + yOffset, mainY: baseY };
+    }
+    return { x: baseX, y: baseY, mainY: baseY };
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow p-4 mb-4">
+      <h2 className="text-lg font-semibold mb-3 text-blue-800">Systemdiagram</h2>
+      <div className="overflow-x-auto">
+        <svg
+          width={width}
+          height={height}
+          className="min-w-full"
+          style={{ minWidth: width }}
+        >
+          {/* Draw pipes first (behind nodes) */}
+          {diagramNodes.map((node, index) => {
+            if (index === 0) return null;
+            
+            const fromPos = getNodePosition(index - 1);
+            const toPos = getNodePosition(index);
+            
+            // For branch nodes, draw main line connection + branch
+            if (node.is_branch) {
+              return (
+                <g key={`pipe-${index}`}>
+                  {/* Main horizontal pipe (continues the main line) */}
+                  <line
+                    x1={fromPos.x}
+                    y1={fromPos.mainY}
+                    x2={toPos.x}
+                    y2={toPos.mainY}
+                    stroke="#6B7280"
+                    strokeWidth={3}
+                  />
+                  {/* T-junction marker */}
+                  <circle
+                    cx={toPos.x}
+                    cy={toPos.mainY}
+                    r={4}
+                    fill="#6B7280"
+                  />
+                  {/* Branch pipe to sprinkler */}
+                  <line
+                    x1={toPos.x}
+                    y1={toPos.mainY}
+                    x2={toPos.x}
+                    y2={toPos.y}
+                    stroke="#9CA3AF"
+                    strokeWidth={2}
+                    strokeDasharray="4,2"
+                  />
+                  {/* RS label on main pipe */}
+                  <text
+                    x={(fromPos.x + toPos.x) / 2}
+                    y={fromPos.mainY - 8}
+                    textAnchor="middle"
+                    className="text-xs fill-gray-500"
+                  >
+                    RS{index}
+                  </text>
+                </g>
+              );
+            }
+            
+            // Regular inline node - straight pipe
+            return (
+              <g key={`pipe-${index}`}>
+                <line
+                  x1={fromPos.x}
+                  y1={fromPos.y}
+                  x2={toPos.x}
+                  y2={toPos.y}
+                  stroke="#6B7280"
+                  strokeWidth={3}
+                />
+                <text
+                  x={(fromPos.x + toPos.x) / 2}
+                  y={fromPos.y - 8}
+                  textAnchor="middle"
+                  className="text-xs fill-gray-500"
+                >
+                  RS{index}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Draw pipe to water supply (after last node) */}
+          {diagramNodes.length > 0 && (
+            <g>
+              <line
+                x1={getNodePosition(diagramNodes.length - 1).x}
+                y1={getNodePosition(diagramNodes.length - 1).mainY}
+                x2={getNodePosition(diagramNodes.length - 1).x + 50}
+                y2={getNodePosition(diagramNodes.length - 1).mainY}
+                stroke="#6B7280"
+                strokeWidth={3}
+              />
+              <text
+                x={getNodePosition(diagramNodes.length - 1).x + 55}
+                y={getNodePosition(diagramNodes.length - 1).mainY + 4}
+                className="text-xs fill-gray-600 font-medium"
+              >
+                Vannforsyning
+              </text>
+            </g>
+          )}
+
+          {/* Draw nodes */}
+          {diagramNodes.map((node, index) => {
+            const pos = getNodePosition(index);
+            const isFirst = index === 0;
+            
+            return (
+              <g key={`node-${node.node_nr}`}>
+                {/* Node circle */}
+                <circle
+                  cx={pos.x}
+                  cy={pos.y}
+                  r={nodeRadius}
+                  fill={isFirst ? "#3B82F6" : node.is_branch ? "#8B5CF6" : "#10B981"}
+                  stroke={isFirst ? "#1D4ED8" : node.is_branch ? "#6D28D9" : "#059669"}
+                  strokeWidth={2}
+                />
+                {/* Node label */}
+                <text
+                  x={pos.x}
+                  y={pos.y - 2}
+                  textAnchor="middle"
+                  className="text-xs fill-white font-bold"
+                >
+                  S{node.node_nr}
+                </text>
+                {/* Flow value */}
+                <text
+                  x={pos.x}
+                  y={pos.y + 10}
+                  textAnchor="middle"
+                  className="text-[10px] fill-white"
+                >
+                  {node.flow_lpm.toFixed(0)}
+                </text>
+                {/* Pressure below node */}
+                <text
+                  x={pos.x}
+                  y={pos.y + nodeRadius + 14}
+                  textAnchor="middle"
+                  className="text-[10px] fill-gray-600"
+                >
+                  {node.pressure_bar.toFixed(2)} bar
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Legend */}
+          <g transform={`translate(10, ${height - 30})`}>
+            <circle cx={8} cy={0} r={6} fill="#3B82F6" />
+            <text x={20} y={4} className="text-[10px] fill-gray-600">Første</text>
+            <circle cx={70} cy={0} r={6} fill="#10B981" />
+            <text x={82} y={4} className="text-[10px] fill-gray-600">Inline</text>
+            <circle cx={130} cy={0} r={6} fill="#8B5CF6" />
+            <text x={142} y={4} className="text-[10px] fill-gray-600">Grenrør</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // MAIN PAGE
 // =============================================================================
 
@@ -653,6 +889,13 @@ export default function Home() {
             {error}
           </div>
         )}
+
+        {/* System Diagram */}
+        <SystemDiagram
+          nodes={result?.noder}
+          nodeInputs={nodes}
+          antallNoder={antallNoder}
+        />
 
         {/* Results */}
         {result && result.success && (
