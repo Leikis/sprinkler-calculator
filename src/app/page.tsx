@@ -144,13 +144,20 @@ function InputField({
   label,
   value,
   onChange,
-  step,
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
-  step?: string;
 }) {
+  const [displayValue, setDisplayValue] = useState(String(value));
+  
+  // Sync display when external value changes (e.g., from load project)
+  const prevValue = useRef(value);
+  if (prevValue.current !== value && parseFloat(displayValue) !== value) {
+    setDisplayValue(String(value));
+    prevValue.current = value;
+  }
+
   return (
     <div>
       <label className="block text-sm font-medium text-gray-900 mb-1">
@@ -159,16 +166,50 @@ function InputField({
       <input
         type="text"
         inputMode="decimal"
-        value={value}
+        value={displayValue}
         onChange={(e) => {
-          const val = e.target.value;
-          // Allow empty, numbers, and decimals
-          if (val === "" || /^-?\d*\.?\d*$/.test(val)) {
-            const num = val === "" || val === "-" || val === "." ? 0 : parseFloat(val);
-            onChange(isNaN(num) ? 0 : num);
+          let val = e.target.value;
+          
+          // Allow empty string for typing
+          if (val === "") {
+            setDisplayValue("");
+            onChange(0);
+            return;
+          }
+          
+          // Only allow valid number characters
+          if (!/^-?\d*\.?\d*$/.test(val)) {
+            return;
+          }
+          
+          // Remove leading zeros (but keep "0." for decimals)
+          if (val.length > 1 && val[0] === "0" && val[1] !== ".") {
+            val = val.replace(/^0+/, "") || "0";
+          }
+          if (val.length > 2 && val[0] === "-" && val[1] === "0" && val[2] !== ".") {
+            val = "-" + val.slice(1).replace(/^0+/, "");
+          }
+          
+          setDisplayValue(val);
+          
+          const num = parseFloat(val);
+          if (!isNaN(num)) {
+            onChange(num);
+            prevValue.current = num;
           }
         }}
-        onFocus={(e) => e.target.select()}
+        onBlur={() => {
+          // On blur, format the display value properly
+          if (displayValue === "" || displayValue === "-" || displayValue === ".") {
+            setDisplayValue("0");
+            onChange(0);
+          } else {
+            const num = parseFloat(displayValue);
+            if (!isNaN(num)) {
+              setDisplayValue(String(num));
+            }
+          }
+        }}
         className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
       />
     </div>
@@ -197,7 +238,6 @@ function FirstNodeSection({
           label="Min. trykk (Bar)"
           value={node.min_trykk_bar}
           onChange={(v) => onChange({ ...node, min_trykk_bar: v })}
-          step="0.1"
         />
         <InputField
           label="Dekningsareal (m²)"
@@ -219,13 +259,11 @@ function FirstNodeSection({
           label="Diameter (mm)"
           value={node.diameter_mm}
           onChange={(v) => onChange({ ...node, diameter_mm: v })}
-          step="0.1"
         />
         <InputField
           label="Lengde (m)"
           value={node.lengde_m}
           onChange={(v) => onChange({ ...node, lengde_m: v })}
-          step="0.1"
         />
         <InputField
           label="90° Bend (stk)"
@@ -301,13 +339,11 @@ function NodeSection({
           label="Diameter (mm)"
           value={node.diameter_mm}
           onChange={(v) => onChange({ ...node, diameter_mm: v })}
-          step="0.1"
         />
         <InputField
           label="Lengde (m)"
           value={node.lengde_m}
           onChange={(v) => onChange({ ...node, lengde_m: v })}
-          step="0.1"
         />
         <InputField
           label="90° Bend (stk)"
@@ -341,13 +377,11 @@ function RettsrekkSection({
           label="Diameter (mm)"
           value={rettstrekk.diameter_mm}
           onChange={(v) => onChange({ ...rettstrekk, diameter_mm: v })}
-          step="0.1"
         />
         <InputField
           label="Lengde (m)"
           value={rettstrekk.lengde_m}
           onChange={(v) => onChange({ ...rettstrekk, lengde_m: v })}
-          step="0.1"
         />
         <InputField
           label="90° Bend (stk)"
