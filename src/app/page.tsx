@@ -1020,15 +1020,11 @@ export default function Home() {
                 <option value={140}>140</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Hoyde anlegg (m)</label>
-              <input
-                type="number"
-                value={hoydeAnlegg}
-                onChange={(e) => setHoydeAnlegg(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            <InputField
+              label="Hoyde anlegg (m)"
+              value={hoydeAnlegg}
+              onChange={setHoydeAnlegg}
+            />
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-1">Antall noder</label>
               <select
