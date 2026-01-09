@@ -144,28 +144,24 @@ function InputField({
   label,
   value,
   onChange,
-  type = "number",
   step,
-  className = "",
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
-  type?: string;
   step?: string;
-  className?: string;
 }) {
   return (
-    <div className={className}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+    <div>
+      <label className="block text-sm font-medium text-gray-900 mb-1">
         {label}
       </label>
       <input
-        type={type}
+        type="number"
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+        className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
       />
     </div>
   );
@@ -179,11 +175,11 @@ function FirstNodeSection({
   onChange: (node: FirstNodeInput) => void;
 }) {
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
-      <h2 className="text-lg font-semibold mb-3 text-blue-800">
-        Første Sprinklerhode
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
+      <h2 className="text-lg font-bold mb-4 text-blue-700 border-b border-gray-200 pb-2">
+        Node 1 - Første Sprinklerhode
       </h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <InputField
           label="K-faktor"
           value={node.k_faktor}
@@ -207,10 +203,10 @@ function FirstNodeSection({
         />
       </div>
 
-      <h3 className="text-md font-medium mt-4 mb-2 text-gray-700">
-        Rettstrekk 1
+      <h3 className="text-md font-semibold mb-3 text-gray-800 bg-gray-100 px-3 py-2 rounded">
+        Rettstrekk 1 (RS1)
       </h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <InputField
           label="Diameter (mm)"
           value={node.diameter_mm}
@@ -246,48 +242,48 @@ function NodeSection({
   onChange: (node: NodeInput) => void;
 }) {
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-blue-800">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 border-b border-gray-200 pb-2">
+        <h2 className="text-lg font-bold text-blue-700">
           Node {node.node_nr}
         </h2>
-        <div className="flex gap-4 text-sm">
-          <label className="flex items-center gap-1">
+        <div className="flex flex-wrap gap-4 mt-2 sm:mt-0">
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={node.er_grenror_h}
               onChange={(e) =>
                 onChange({ ...node, er_grenror_h: e.target.checked })
               }
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
-            Grenrør H
+            <span className="text-sm font-medium text-gray-700">Grenrør H</span>
           </label>
-          <label className="flex items-center gap-1">
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={node.er_ekv_kfaktor}
               onChange={(e) =>
                 onChange({ ...node, er_ekv_kfaktor: e.target.checked })
               }
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
-            Ekv k-faktor
+            <span className="text-sm font-medium text-gray-700">Ekv k-faktor</span>
           </label>
-          <label className="flex items-center gap-1">
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={node.er_grenror_v}
               onChange={(e) =>
                 onChange({ ...node, er_grenror_v: e.target.checked })
               }
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
-            Grenrør V
+            <span className="text-sm font-medium text-gray-700">Grenrør V</span>
           </label>
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <InputField
           label="K-faktor"
           value={node.k_faktor}
@@ -328,11 +324,11 @@ function RettsrekkSection({
   onChange: (rs: RettsrekkInput) => void;
 }) {
   return (
-    <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
-      <h3 className="text-md font-medium mb-2 text-gray-700">
-        Rettstrekk {rettstrekk.rs_nr}
+    <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200 ml-4">
+      <h3 className="text-md font-semibold mb-3 text-gray-800">
+        Rettstrekk {rettstrekk.rs_nr} (RS{rettstrekk.rs_nr})
       </h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <InputField
           label="Diameter (mm)"
           value={rettstrekk.diameter_mm}
@@ -382,37 +378,37 @@ function ValveTable({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
-      <h2 className="text-lg font-semibold mb-3 text-blue-800">Ventiler</h2>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
+      <h2 className="text-lg font-bold mb-4 text-blue-700 border-b border-gray-200 pb-2">Ventiler</h2>
       <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
+        <table className="min-w-full">
           <thead>
-            <tr className="border-b">
-              <th className="text-left py-2 pr-4 font-medium text-gray-700">Type</th>
-              <th className="text-left py-2 px-2 font-medium text-gray-700">Dim (mm)</th>
-              <th className="text-left py-2 px-2 font-medium text-gray-700">RS</th>
+            <tr className="bg-gray-100">
+              <th className="text-left py-3 px-4 font-semibold text-gray-900">Type</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-900">Dimensjon (mm)</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-900">Tilkoblet RS</th>
             </tr>
           </thead>
           <tbody>
             {ventiler.map((ventil, index) => (
-              <tr key={ventil.type} className="border-b last:border-b-0">
-                <td className="py-2 pr-4 text-gray-600">{getShortName(ventil.type)}</td>
-                <td className="py-2 px-2">
+              <tr key={ventil.type} className="border-b border-gray-200 last:border-b-0">
+                <td className="py-3 px-4 text-gray-900 font-medium">{getShortName(ventil.type)}</td>
+                <td className="py-3 px-4">
                   <select
                     value={ventil.dimensjon}
                     onChange={(e) => updateVentil(index, "dimensjon", e.target.value)}
-                    className="w-20 border border-gray-300 rounded px-2 py-1 text-sm"
+                    className="w-24 border border-gray-300 rounded px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500"
                   >
                     {VALVE_DIMENSIONS.map((dim) => (
                       <option key={dim} value={dim}>{dim}</option>
                     ))}
                   </select>
                 </td>
-                <td className="py-2 px-2">
+                <td className="py-3 px-4">
                   <select
                     value={ventil.tilkoblet_rs}
                     onChange={(e) => updateVentil(index, "tilkoblet_rs", Number(e.target.value))}
-                    className="w-16 border border-gray-300 rounded px-2 py-1 text-sm"
+                    className="w-20 border border-gray-300 rounded px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500"
                   >
                     {Array.from({ length: antallNoder }, (_, i) => i + 1).map((n) => (
                       <option key={n} value={n}>{n}</option>
@@ -451,26 +447,24 @@ function SystemDiagram({
 }) {
   if (!nodes || nodes.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-4 mb-4">
-        <h2 className="text-lg font-semibold mb-3 text-blue-800">Systemdiagram</h2>
-        <div className="h-48 flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">
-          Kjør beregning for å se diagram
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
+        <h2 className="text-lg font-bold mb-4 text-blue-700 border-b border-gray-200 pb-2">Systemdiagram</h2>
+        <div className="h-48 flex items-center justify-center text-gray-500 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+          Kjor beregning for a se diagram
         </div>
       </div>
     );
   }
 
-  // Layout constants
-  const nodeRadius = 24;
-  const nodeSpacingX = 100;
-  const nodeSpacingY = 80;
-  const branchOffset = 60;
-  const startX = 60;
-  const startY = 50;
-  const width = Math.max(400, startX * 2 + (antallNoder - 1) * nodeSpacingX + branchOffset);
-  const height = startY * 2 + nodeSpacingY + branchOffset;
+  const nodeRadius = 28;
+  const nodeSpacingX = 110;
+  const nodeSpacingY = 90;
+  const branchOffset = 65;
+  const startX = 70;
+  const startY = 60;
+  const width = Math.max(450, startX * 2 + (antallNoder - 1) * nodeSpacingX + 100);
+  const height = startY * 2 + nodeSpacingY + branchOffset + 20;
 
-  // Build diagram data
   const diagramNodes: DiagramNode[] = nodes.map((node, index) => {
     const inputNode = index === 0 ? null : nodeInputs[index - 1];
     const isBranch = inputNode ? (inputNode.er_grenror_h || inputNode.er_grenror_v) : false;
@@ -485,7 +479,6 @@ function SystemDiagram({
     };
   });
 
-  // Calculate positions - main line goes left to right, branches go up/down
   const getNodePosition = (index: number) => {
     const node = diagramNodes[index];
     const baseX = startX + index * nodeSpacingX;
@@ -499,58 +492,48 @@ function SystemDiagram({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
-      <h2 className="text-lg font-semibold mb-3 text-blue-800">Systemdiagram</h2>
-      <div className="overflow-x-auto">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
+      <h2 className="text-lg font-bold mb-4 text-blue-700 border-b border-gray-200 pb-2">Systemdiagram</h2>
+      <div className="overflow-x-auto bg-gray-50 rounded-lg p-4">
         <svg
           width={width}
           height={height}
           className="min-w-full"
           style={{ minWidth: width }}
         >
-          {/* Draw pipes first (behind nodes) */}
           {diagramNodes.map((node, index) => {
             if (index === 0) return null;
             
             const fromPos = getNodePosition(index - 1);
             const toPos = getNodePosition(index);
             
-            // For branch nodes, draw main line connection + branch
             if (node.is_branch) {
               return (
                 <g key={`pipe-${index}`}>
-                  {/* Main horizontal pipe (continues the main line) */}
                   <line
                     x1={fromPos.x}
                     y1={fromPos.mainY}
                     x2={toPos.x}
                     y2={toPos.mainY}
-                    stroke="#6B7280"
-                    strokeWidth={3}
+                    stroke="#4B5563"
+                    strokeWidth={4}
                   />
-                  {/* T-junction marker */}
-                  <circle
-                    cx={toPos.x}
-                    cy={toPos.mainY}
-                    r={4}
-                    fill="#6B7280"
-                  />
-                  {/* Branch pipe to sprinkler */}
+                  <circle cx={toPos.x} cy={toPos.mainY} r={5} fill="#4B5563" />
                   <line
                     x1={toPos.x}
                     y1={toPos.mainY}
                     x2={toPos.x}
                     y2={toPos.y}
-                    stroke="#9CA3AF"
-                    strokeWidth={2}
-                    strokeDasharray="4,2"
+                    stroke="#6B7280"
+                    strokeWidth={3}
+                    strokeDasharray="6,3"
                   />
-                  {/* RS label on main pipe */}
                   <text
                     x={(fromPos.x + toPos.x) / 2}
-                    y={fromPos.mainY - 8}
+                    y={fromPos.mainY - 12}
                     textAnchor="middle"
-                    className="text-xs fill-gray-500"
+                    className="text-sm font-medium"
+                    fill="#374151"
                   >
                     RS{index}
                   </text>
@@ -558,7 +541,6 @@ function SystemDiagram({
               );
             }
             
-            // Regular inline node - straight pipe
             return (
               <g key={`pipe-${index}`}>
                 <line
@@ -566,14 +548,15 @@ function SystemDiagram({
                   y1={fromPos.y}
                   x2={toPos.x}
                   y2={toPos.y}
-                  stroke="#6B7280"
-                  strokeWidth={3}
+                  stroke="#4B5563"
+                  strokeWidth={4}
                 />
                 <text
                   x={(fromPos.x + toPos.x) / 2}
-                  y={fromPos.y - 8}
+                  y={fromPos.y - 12}
                   textAnchor="middle"
-                  className="text-xs fill-gray-500"
+                  className="text-sm font-medium"
+                  fill="#374151"
                 >
                   RS{index}
                 </text>
@@ -581,67 +564,65 @@ function SystemDiagram({
             );
           })}
 
-          {/* Draw pipe to water supply (after last node) */}
           {diagramNodes.length > 0 && (
             <g>
               <line
                 x1={getNodePosition(diagramNodes.length - 1).x}
                 y1={getNodePosition(diagramNodes.length - 1).mainY}
-                x2={getNodePosition(diagramNodes.length - 1).x + 50}
+                x2={getNodePosition(diagramNodes.length - 1).x + 60}
                 y2={getNodePosition(diagramNodes.length - 1).mainY}
-                stroke="#6B7280"
-                strokeWidth={3}
+                stroke="#4B5563"
+                strokeWidth={4}
               />
               <text
-                x={getNodePosition(diagramNodes.length - 1).x + 55}
-                y={getNodePosition(diagramNodes.length - 1).mainY + 4}
-                className="text-xs fill-gray-600 font-medium"
+                x={getNodePosition(diagramNodes.length - 1).x + 70}
+                y={getNodePosition(diagramNodes.length - 1).mainY + 5}
+                className="text-sm font-semibold"
+                fill="#1F2937"
               >
                 Vannforsyning
               </text>
             </g>
           )}
 
-          {/* Draw nodes */}
           {diagramNodes.map((node, index) => {
             const pos = getNodePosition(index);
             const isFirst = index === 0;
             
             return (
               <g key={`node-${node.node_nr}`}>
-                {/* Node circle */}
                 <circle
                   cx={pos.x}
                   cy={pos.y}
                   r={nodeRadius}
-                  fill={isFirst ? "#3B82F6" : node.is_branch ? "#8B5CF6" : "#10B981"}
-                  stroke={isFirst ? "#1D4ED8" : node.is_branch ? "#6D28D9" : "#059669"}
-                  strokeWidth={2}
+                  fill={isFirst ? "#2563EB" : node.is_branch ? "#7C3AED" : "#059669"}
+                  stroke={isFirst ? "#1D4ED8" : node.is_branch ? "#5B21B6" : "#047857"}
+                  strokeWidth={3}
                 />
-                {/* Node label */}
                 <text
                   x={pos.x}
-                  y={pos.y - 2}
+                  y={pos.y - 4}
                   textAnchor="middle"
-                  className="text-xs fill-white font-bold"
+                  className="text-sm font-bold"
+                  fill="white"
                 >
                   S{node.node_nr}
                 </text>
-                {/* Flow value */}
                 <text
                   x={pos.x}
-                  y={pos.y + 10}
+                  y={pos.y + 12}
                   textAnchor="middle"
-                  className="text-[10px] fill-white"
+                  className="text-xs"
+                  fill="white"
                 >
-                  {node.flow_lpm.toFixed(0)}
+                  {node.flow_lpm.toFixed(0)} l/m
                 </text>
-                {/* Pressure below node */}
                 <text
                   x={pos.x}
-                  y={pos.y + nodeRadius + 14}
+                  y={pos.y + nodeRadius + 18}
                   textAnchor="middle"
-                  className="text-[10px] fill-gray-600"
+                  className="text-xs font-medium"
+                  fill="#374151"
                 >
                   {node.pressure_bar.toFixed(2)} bar
                 </text>
@@ -649,14 +630,13 @@ function SystemDiagram({
             );
           })}
 
-          {/* Legend */}
-          <g transform={`translate(10, ${height - 30})`}>
-            <circle cx={8} cy={0} r={6} fill="#3B82F6" />
-            <text x={20} y={4} className="text-[10px] fill-gray-600">Første</text>
-            <circle cx={70} cy={0} r={6} fill="#10B981" />
-            <text x={82} y={4} className="text-[10px] fill-gray-600">Inline</text>
-            <circle cx={130} cy={0} r={6} fill="#8B5CF6" />
-            <text x={142} y={4} className="text-[10px] fill-gray-600">Grenrør</text>
+          <g transform={`translate(15, ${height - 25})`}>
+            <circle cx={8} cy={0} r={8} fill="#2563EB" />
+            <text x={22} y={4} className="text-xs font-medium" fill="#374151">Forste</text>
+            <circle cx={80} cy={0} r={8} fill="#059669" />
+            <text x={94} y={4} className="text-xs font-medium" fill="#374151">Inline</text>
+            <circle cx={150} cy={0} r={8} fill="#7C3AED" />
+            <text x={164} y={4} className="text-xs font-medium" fill="#374151">Grenror</text>
           </g>
         </svg>
       </div>
@@ -669,59 +649,43 @@ function SystemDiagram({
 // =============================================================================
 
 export default function Home() {
-  // Project info
   const [anleggsnavn, setAnleggsnavn] = useState("");
   const [kommentar, setKommentar] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // General parameters
   const [cFaktor, setCFaktor] = useState(120);
   const [hoydeAnlegg, setHoydeAnlegg] = useState(0);
   const [antallNoder, setAntallNoder] = useState(4);
 
-  // First node (special - includes RS1)
-  const [firstNode, setFirstNode] = useState<FirstNodeInput>(
-    createDefaultFirstNode()
-  );
-
-  // Additional nodes (2-20)
+  const [firstNode, setFirstNode] = useState<FirstNodeInput>(createDefaultFirstNode());
   const [nodes, setNodes] = useState<NodeInput[]>(() =>
     Array.from({ length: 19 }, (_, i) => createDefaultNode(i + 2))
   );
-
-  // Pipe sections (RS 2-20, RS1 is included in firstNode)
   const [rettstrekk, setRettstrekk] = useState<RettsrekkInput[]>(() =>
     Array.from({ length: 19 }, (_, i) => createDefaultRettstrekk(i + 2))
   );
-
-  // Valves
   const [ventiler, setVentiler] = useState<VentilInput[]>(createDefaultVentiler);
 
-  // Results
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Update a specific node
   const updateNode = (index: number, node: NodeInput) => {
     const newNodes = [...nodes];
     newNodes[index] = node;
     setNodes(newNodes);
   };
 
-  // Update a specific rettstrekk
   const updateRettstrekk = (index: number, rs: RettsrekkInput) => {
     const newRettstrekk = [...rettstrekk];
     newRettstrekk[index] = rs;
     setRettstrekk(newRettstrekk);
   };
 
-  // Build API request and calculate
   const handleCalculate = async () => {
     setLoading(true);
     setError(null);
 
-    // Build nodes array for API
     const apiNodes = [
       {
         node_nr: 1,
@@ -743,11 +707,9 @@ export default function Home() {
         antall_tstykker: n.antall_tstykker,
         er_grenror: n.er_grenror_h || n.er_grenror_v,
         er_ekv_kfaktor: n.er_ekv_kfaktor,
-        er_tstykke: n.er_grenror_v,
       })),
     ];
 
-    // Build rettstrekk array for API (RS 2 onwards)
     const apiRettstrekk = rettstrekk.slice(0, antallNoder - 1).map((rs) => ({
       rs_nr: rs.rs_nr,
       diameter_mm: rs.diameter_mm,
@@ -756,7 +718,6 @@ export default function Home() {
       antall_tstykker: rs.antall_tstykker,
     }));
 
-    // Build ventiler object for API
     const apiVentiler: Record<string, { dimensjon: string; tilkoblet_rs: number }> = {};
     ventiler.forEach((v) => {
       if (v.dimensjon !== "NA") {
@@ -791,15 +752,12 @@ export default function Home() {
         setError(data.error || "Calculation failed");
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to connect to API"
-      );
+      setError(err instanceof Error ? err.message : "Failed to connect to API");
     } finally {
       setLoading(false);
     }
   };
 
-  // Save project to JSON file
   const handleSaveProject = () => {
     const projectData: ProjectData = {
       version: "1.0",
@@ -816,9 +774,7 @@ export default function Home() {
       ventiler,
     };
 
-    const blob = new Blob([JSON.stringify(projectData, null, 2)], {
-      type: "application/json",
-    });
+    const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -829,7 +785,6 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
-  // Load project from JSON file
   const handleLoadProject = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -838,7 +793,6 @@ export default function Home() {
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target?.result as string) as ProjectData;
-        
         setAnleggsnavn(data.anleggsnavn || "");
         setKommentar(data.kommentar || "");
         setCFaktor(data.generelle_parametre.c_faktor);
@@ -855,24 +809,18 @@ export default function Home() {
       }
     };
     reader.readAsText(file);
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Export to PDF
   const handleExportPDF = async () => {
     if (!result || !result.success) {
-      setError("Kjør beregning først for å eksportere PDF");
+      setError("Kjor beregning forst for a eksportere PDF");
       return;
     }
 
-    // Create a printable HTML document
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      setError("Popup blokkert. Tillat popups for å eksportere PDF.");
+      setError("Popup blokkert. Tillat popups for a eksportere PDF.");
       return;
     }
 
@@ -885,33 +833,30 @@ export default function Home() {
   <meta charset="utf-8">
   <title>Sprinklerberegning - ${anleggsnavn || "Uten navn"}</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; font-size: 12px; }
+    body { font-family: Arial, sans-serif; margin: 40px; font-size: 12px; color: #111; }
     h1 { color: #1e40af; font-size: 24px; margin-bottom: 5px; }
-    h2 { color: #1e40af; font-size: 16px; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+    h2 { color: #1e40af; font-size: 16px; margin-top: 20px; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
     .header { margin-bottom: 20px; }
-    .subtitle { color: #666; font-size: 14px; }
-    .meta { color: #666; margin-top: 10px; }
+    .subtitle { color: #333; font-size: 14px; font-weight: bold; }
+    .meta { color: #555; margin-top: 10px; }
     table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background-color: #f3f4f6; font-weight: bold; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    th { background-color: #e5e7eb; font-weight: bold; color: #111; }
     .summary { display: flex; gap: 20px; margin: 20px 0; }
-    .summary-box { background: #f0fdf4; border: 1px solid #86efac; padding: 15px; border-radius: 8px; flex: 1; }
-    .summary-label { color: #666; font-size: 11px; }
-    .summary-value { font-size: 20px; font-weight: bold; color: #166534; }
-    .comment { background: #f9fafb; padding: 10px; border-radius: 4px; margin: 10px 0; white-space: pre-wrap; }
+    .summary-box { background: #ecfdf5; border: 2px solid #10b981; padding: 15px; border-radius: 8px; flex: 1; }
+    .summary-label { color: #555; font-size: 11px; }
+    .summary-value { font-size: 22px; font-weight: bold; color: #065f46; }
+    .comment { background: #f3f4f6; padding: 12px; border-radius: 4px; margin: 10px 0; }
     .footer { margin-top: 40px; color: #666; font-size: 10px; border-top: 1px solid #ccc; padding-top: 10px; }
-    @media print { body { margin: 20px; } }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>Sprinklerberegning</h1>
     <div class="subtitle">${anleggsnavn || "Uten navn"}</div>
-    <div class="meta">Dato: ${today} | C-faktor: ${cFaktor} | Høyde: ${hoydeAnlegg}m | Antall noder: ${antallNoder}</div>
+    <div class="meta">Dato: ${today} | C-faktor: ${cFaktor} | Hoyde: ${hoydeAnlegg}m | Antall noder: ${antallNoder}</div>
   </div>
-
-  ${kommentar ? `<div class="comment"><strong>Kommentar:</strong><br>${kommentar}</div>` : ""}
-
+  ${kommentar ? `<div class="comment"><strong>Kommentar:</strong> ${kommentar}</div>` : ""}
   <div class="summary">
     <div class="summary-box">
       <div class="summary-label">Total vannmengde</div>
@@ -922,81 +867,41 @@ export default function Home() {
       <div class="summary-value">${result.total_trykk_bar?.toFixed(3)} Bar</div>
     </div>
   </div>
-
   <h2>Noder (Sprinklerhoder)</h2>
   <table>
-    <thead>
-      <tr>
-        <th>Node</th>
-        <th>Vannmengde Q (l/min)</th>
-        <th>Trykk (Bar)</th>
-        <th>Kumulativ Q (l/min)</th>
-      </tr>
-    </thead>
+    <thead><tr><th>Node</th><th>Vannmengde Q (l/min)</th><th>Trykk (Bar)</th><th>Kumulativ Q (l/min)</th></tr></thead>
     <tbody>
-      ${result.noder?.map(node => `
-        <tr>
-          <td>S${node.node_nr}</td>
-          <td>${node.flow_lpm.toFixed(1)}</td>
-          <td>${node.pressure_at_node_bar.toFixed(4)}</td>
-          <td>${node.cumulative_flow_lpm?.toFixed(1) || "-"}</td>
-        </tr>
-      `).join("") || ""}
+      ${result.noder?.map(node => `<tr><td>S${node.node_nr}</td><td>${node.flow_lpm.toFixed(1)}</td><td>${node.pressure_at_node_bar.toFixed(4)}</td><td>${node.cumulative_flow_lpm?.toFixed(1) || "-"}</td></tr>`).join("") || ""}
     </tbody>
   </table>
-
-  <h2>Rettstrekk (Rørføringer)</h2>
+  <h2>Rettstrekk (Rorforinger)</h2>
   <table>
-    <thead>
-      <tr>
-        <th>RS</th>
-        <th>Trykktap/m (Bar/m)</th>
-        <th>Utløpstrykk (Bar)</th>
-      </tr>
-    </thead>
+    <thead><tr><th>RS</th><th>Trykktap/m (Bar/m)</th><th>Utlopstrykk (Bar)</th></tr></thead>
     <tbody>
-      ${result.rettstrekk?.map(rs => `
-        <tr>
-          <td>RS${rs.rs_nr}</td>
-          <td>${rs.pressure_drop_per_m_bar.toFixed(6)}</td>
-          <td>${rs.outlet_pressure_bar.toFixed(4)}</td>
-        </tr>
-      `).join("") || ""}
+      ${result.rettstrekk?.map(rs => `<tr><td>RS${rs.rs_nr}</td><td>${rs.pressure_drop_per_m_bar.toFixed(6)}</td><td>${rs.outlet_pressure_bar.toFixed(4)}</td></tr>`).join("") || ""}
     </tbody>
   </table>
-
-  <div class="footer">
-    Generert av Sprinkler Calculator | NS 12845 | ${today}
-  </div>
-
-  <script>
-    window.onload = function() { window.print(); }
-  </script>
+  <div class="footer">Generert av Sprinkler Calculator | NS 12845 | ${today}</div>
+  <script>window.onload = function() { window.print(); }</script>
 </body>
-</html>
-    `;
+</html>`;
 
     printWindow.document.write(html);
     printWindow.document.close();
   };
 
-  // Visible nodes (based on antallNoder selection)
   const visibleNodes = nodes.slice(0, antallNoder - 1);
   const visibleRettstrekk = rettstrekk.slice(0, antallNoder - 1);
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 px-4">
+    <div className="min-h-screen bg-slate-100 py-6 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Sprinkler Calculator
-              </h1>
-              <p className="text-gray-600 text-sm">
-                Hydraulisk beregning av sprinkleranlegg etter NS 12845
-              </p>
+              <h1 className="text-2xl font-bold text-gray-900">Sprinkler Calculator</h1>
+              <p className="text-gray-600">Hydraulisk beregning av sprinkleranlegg etter NS 12845</p>
             </div>
             <div className="flex gap-2">
               <input
@@ -1008,19 +913,19 @@ export default function Home() {
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors text-gray-700"
               >
                 Importer
               </button>
               <button
                 onClick={handleSaveProject}
-                className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors text-gray-700"
               >
                 Lagre
               </button>
               <button
                 onClick={handleExportPDF}
-                className="px-3 py-2 text-sm bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
               >
                 Eksporter PDF
               </button>
@@ -1029,48 +934,42 @@ export default function Home() {
         </div>
 
         {/* Project Info */}
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <h2 className="text-lg font-semibold mb-3">Prosjektinfo</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
+          <h2 className="text-lg font-bold mb-4 text-gray-900">Prosjektinfo</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Anleggsnavn
-              </label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Anleggsnavn</label>
               <input
                 type="text"
                 value={anleggsnavn}
                 onChange={(e) => setAnleggsnavn(e.target.value)}
                 placeholder="F.eks. Bygg A - Kontorlokaler"
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Kommentar
-              </label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Kommentar</label>
               <input
                 type="text"
                 value={kommentar}
                 onChange={(e) => setKommentar(e.target.value)}
                 placeholder="Valgfri beskrivelse"
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
         </div>
 
         {/* General Parameters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <h2 className="text-lg font-semibold mb-3">Generelle Parametre</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4">
+          <h2 className="text-lg font-bold mb-4 text-gray-900">Generelle Parametre</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                C-faktor
-              </label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">C-faktor</label>
               <select
                 value={cFaktor}
                 onChange={(e) => setCFaktor(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500"
               >
                 <option value={100}>100</option>
                 <option value={110}>110</option>
@@ -1080,45 +979,36 @@ export default function Home() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Høyde anlegg (m)
-              </label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Hoyde anlegg (m)</label>
               <input
                 type="number"
                 value={hoydeAnlegg}
                 onChange={(e) => setHoydeAnlegg(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Antall noder
-              </label>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Antall noder</label>
               <select
                 value={antallNoder}
                 onChange={(e) => setAntallNoder(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500"
               >
                 {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
+                  <option key={n} value={n}>{n}</option>
                 ))}
               </select>
             </div>
           </div>
         </div>
 
-        {/* First Node + RS1 */}
+        {/* First Node */}
         <FirstNodeSection node={firstNode} onChange={setFirstNode} />
 
         {/* Additional Nodes and Rettstrekk */}
         {visibleNodes.map((node, index) => (
           <div key={node.node_nr}>
-            <NodeSection
-              node={node}
-              onChange={(n) => updateNode(index, n)}
-            />
+            <NodeSection node={node} onChange={(n) => updateNode(index, n)} />
             {visibleRettstrekk[index] && (
               <RettsrekkSection
                 rettstrekk={visibleRettstrekk[index]}
@@ -1129,136 +1019,89 @@ export default function Home() {
         ))}
 
         {/* Valve Table */}
-        <ValveTable
-          ventiler={ventiler}
-          onChange={setVentiler}
-          antallNoder={antallNoder}
-        />
+        <ValveTable ventiler={ventiler} onChange={setVentiler} antallNoder={antallNoder} />
 
         {/* Calculate Button */}
-        <div className="mb-6">
-          <button
-            onClick={handleCalculate}
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-blue-300 transition-colors"
-          >
-            {loading ? "Beregner..." : "Beregn Alle Noder"}
-          </button>
-        </div>
+        <button
+          onClick={handleCalculate}
+          disabled={loading}
+          className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-bold text-lg hover:bg-blue-700 disabled:bg-blue-300 transition-colors mb-6 shadow-sm"
+        >
+          {loading ? "Beregner..." : "Beregn Alle Noder"}
+        </button>
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-50 border-2 border-red-300 text-red-800 px-4 py-3 rounded-lg mb-6 font-medium">
             {error}
           </div>
         )}
 
         {/* System Diagram */}
-        <SystemDiagram
-          nodes={result?.noder}
-          nodeInputs={nodes}
-          antallNoder={antallNoder}
-        />
+        <SystemDiagram nodes={result?.noder} nodeInputs={nodes} antallNoder={antallNoder} />
 
         {/* Results */}
         {result && result.success && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-green-800 mb-4">
-              Beregningsresultater
-            </h2>
+          <div className="bg-emerald-50 border-2 border-emerald-300 rounded-lg p-6 mb-4">
+            <h2 className="text-xl font-bold text-emerald-800 mb-4">Beregningsresultater</h2>
 
-            {/* Summary */}
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-white rounded-lg p-4">
-                <div className="text-sm text-gray-500">Total vannmengde</div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {result.total_vannmengde_lpm?.toFixed(1)} l/min
+              <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                <div className="text-sm text-gray-600 font-medium">Total vannmengde</div>
+                <div className="text-3xl font-bold text-gray-900">
+                  {result.total_vannmengde_lpm?.toFixed(1)} <span className="text-lg">l/min</span>
                 </div>
               </div>
-              <div className="bg-white rounded-lg p-4">
-                <div className="text-sm text-gray-500">Totalt trykk (PQ-krav)</div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {result.total_trykk_bar?.toFixed(3)} Bar
+              <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                <div className="text-sm text-gray-600 font-medium">Totalt trykk (PQ-krav)</div>
+                <div className="text-3xl font-bold text-gray-900">
+                  {result.total_trykk_bar?.toFixed(3)} <span className="text-lg">Bar</span>
                 </div>
               </div>
             </div>
 
-            {/* Node Results Table */}
-            <h3 className="font-semibold text-green-800 mb-2">
-              Noder (Sprinklerhoder)
-            </h3>
-            <div className="bg-white rounded-lg overflow-hidden mb-4">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <h3 className="font-bold text-emerald-800 mb-2">Noder (Sprinklerhoder)</h3>
+            <div className="bg-white rounded-lg overflow-hidden mb-4 border border-emerald-200">
+              <table className="min-w-full">
+                <thead className="bg-emerald-100">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Node
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Vannmengde Q
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Trykk
-                    </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                      Kumulativ Q
-                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">Node</th>
+                    <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">Vannmengde Q</th>
+                    <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">Trykk</th>
+                    <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">Kumulativ Q</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {result.noder?.map((node) => (
                     <tr key={node.node_nr}>
-                      <td className="px-4 py-2 text-sm font-medium">
-                        S{node.node_nr}
-                      </td>
-                      <td className="px-4 py-2 text-sm">
-                        {node.flow_lpm.toFixed(1)} l/min
-                      </td>
-                      <td className="px-4 py-2 text-sm">
-                        {node.pressure_at_node_bar.toFixed(4)} Bar
-                      </td>
-                      <td className="px-4 py-2 text-sm">
-                        {node.cumulative_flow_lpm?.toFixed(1) || "-"} l/min
-                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">S{node.node_nr}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{node.flow_lpm.toFixed(1)} l/min</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{node.pressure_at_node_bar.toFixed(4)} Bar</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{node.cumulative_flow_lpm?.toFixed(1) || "-"} l/min</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Rettstrekk Results Table */}
             {result.rettstrekk && result.rettstrekk.length > 0 && (
               <>
-                <h3 className="font-semibold text-green-800 mb-2">
-                  Rettstrekk (Rørføringer)
-                </h3>
-                <div className="bg-white rounded-lg overflow-hidden">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                <h3 className="font-bold text-emerald-800 mb-2">Rettstrekk (Rorforinger)</h3>
+                <div className="bg-white rounded-lg overflow-hidden border border-emerald-200">
+                  <table className="min-w-full">
+                    <thead className="bg-emerald-100">
                       <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          RS
-                        </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Trykktap/m
-                        </th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                          Totalt trykk
-                        </th>
+                        <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">RS</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">Trykktap/m</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">Utlopstrykk</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {result.rettstrekk.map((rs) => (
                         <tr key={rs.rs_nr}>
-                          <td className="px-4 py-2 text-sm font-medium">
-                            RS{rs.rs_nr}
-                          </td>
-                          <td className="px-4 py-2 text-sm">
-                            {rs.pressure_drop_per_m_bar.toFixed(6)} Bar/m
-                          </td>
-                          <td className="px-4 py-2 text-sm">
-                            {rs.outlet_pressure_bar.toFixed(4)} Bar
-                          </td>
+                          <td className="px-4 py-3 text-sm font-semibold text-gray-900">RS{rs.rs_nr}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{rs.pressure_drop_per_m_bar.toFixed(6)} Bar/m</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{rs.outlet_pressure_bar.toFixed(4)} Bar</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1272,10 +1115,10 @@ export default function Home() {
         {/* Debug JSON */}
         {result && (
           <details className="mt-6">
-            <summary className="cursor-pointer text-gray-500 text-sm">
-              Vis rå JSON-resultat
+            <summary className="cursor-pointer text-gray-600 text-sm font-medium hover:text-gray-900">
+              Vis ra JSON-resultat
             </summary>
-            <pre className="mt-2 bg-gray-100 p-4 rounded-lg text-xs overflow-auto">
+            <pre className="mt-2 bg-gray-900 text-gray-100 p-4 rounded-lg text-xs overflow-auto">
               {JSON.stringify(result, null, 2)}
             </pre>
           </details>
