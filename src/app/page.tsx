@@ -151,6 +151,15 @@ function InputField({
   onChange: (value: number) => void;
   step?: string;
 }) {
+  const [localValue, setLocalValue] = useState(String(value));
+  
+  // Sync local value when external value changes
+  const valueRef = useRef(value);
+  if (valueRef.current !== value) {
+    valueRef.current = value;
+    setLocalValue(String(value));
+  }
+
   return (
     <div>
       <label className="block text-sm font-medium text-gray-900 mb-1">
@@ -159,8 +168,20 @@ function InputField({
       <input
         type="number"
         step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
+        value={localValue}
+        onChange={(e) => {
+          setLocalValue(e.target.value);
+          const num = parseFloat(e.target.value);
+          if (!isNaN(num)) {
+            onChange(num);
+          }
+        }}
+        onBlur={() => {
+          if (localValue === "" || isNaN(parseFloat(localValue))) {
+            setLocalValue("0");
+            onChange(0);
+          }
+        }}
         className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
       />
     </div>
